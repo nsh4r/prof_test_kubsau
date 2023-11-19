@@ -1,18 +1,18 @@
 from typing import Union
-
+from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from database import *
 
 app = FastAPI()
 
 
-class Applicant:
-    def __init__(self, phone: str, surname: str, name: str, patronymic: str, city: str):
-        self.phone = phone
-        self.surname = surname
-        self.name = name
-        self.patronymic = patronymic
-        self.city = city
+class Applicant(BaseModel):
+    phone: int
+    surname: str
+    name: str
+    patronymic: str
+    city: str
 
 
 @app.get("/")
@@ -21,5 +21,5 @@ def main():
 
 
 @app.post("/items/{item_id}")
-def create_applicant(phone: str, surname: str, name: str, city: str, patronymic: str = None):
+def create_applicant(applicant: list[Applicant]):
     pass
