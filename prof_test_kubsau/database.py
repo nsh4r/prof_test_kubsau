@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
-from sqlalchemy.orm import validates, relationship, DeclarativeBase, Mapped, mapped_column
-from typing import List
+from sqlalchemy.orm import validates, relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
+from fastapi import HTTPException
 from datetime import datetime
+from typing import List
 import re
 
 SQLALCHEMY_DATABASE_URL = 'sqlite:///./sql_app.db'
@@ -10,6 +11,7 @@ SQLALCHEMY_DATABASE_URL = 'sqlite:///./sql_app.db'
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False}
 )
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):
@@ -48,7 +50,7 @@ class Result(Base):
     @validates('phone_number')
     def validate_phone(self, key, phone_number):
         if not re.match(r'79\d{9}', phone_number):
-            raise ValueError('Phone number should match the pattern "79#########"')
+            raise HTTPException(status_code=422, detail='Phone number should match the pattern "79#########"')
         return phone_number
 
 
@@ -79,6 +81,7 @@ class Question(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     text: Mapped[str] = mapped_column(String(200))
+
     answers: Mapped[List['Answer']] = relationship(back_populates='question')
 
 
