@@ -21,3 +21,10 @@ pytest-mock = "^3.12.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--tb=long"
+testpaths = [
+    "prof_test_kubsau",
+]
