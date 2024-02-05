@@ -26,6 +26,7 @@ jobs:
     - name: Install dependencies
       run: |
         pipx install poetry==1.7.0
+        poetry env use 3.12
         poetry install --with test
         pip install flake8
     - name: Flake8
