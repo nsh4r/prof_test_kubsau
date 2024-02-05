@@ -10,8 +10,21 @@ python = "^3.12"
 fastapi = "^0.104.1"
 uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
 sqlalchemy = "^2.0.23"
+flake8 = "^7.0.0"
 
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.0"
+httpx = "^0.26.0"
+pytest-mock = "^3.12.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--tb=long"
+testpaths = [
+    "prof_test_kubsau",
+]
