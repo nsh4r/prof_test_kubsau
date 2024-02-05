@@ -29,21 +29,3 @@ async def send_result(result_info: schemas.Result, db: Session = Depends(get_db)
     return result
 
 
-@app.get('/test/question/')
-async def read_test(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Получает вопросы и ответы из базы данных."""
-    question = db.query(database.Question).offset(skip).limit(limit).all()
-    answers = db.query(database.Answer).offset(skip).limit(limit).all()
-    return {'question': question, 'answers': answers}
-
-
-@app.delete('/test/result/', response_model=schemas.Result)
-async def del_result(result_info: schemas.Result, db: Session = Depends(get_db)):
-    """Удаляет результат из базы данных."""
-    result = db.query(database.Result).filter(database.Result.phone_number == result_info.phone_number).first()
-    if not result:
-        raise HTTPException(status_code=404, detail='Result not found')
-    db.delete(result)
-    db.commit()
-    raise HTTPException(status_code=200, detail='Result deleted')
-
