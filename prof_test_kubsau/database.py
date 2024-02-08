@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy import Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import validates, relationship, DeclarativeBase, Mapped, mapped_column
 from typing import List
 from datetime import datetime
