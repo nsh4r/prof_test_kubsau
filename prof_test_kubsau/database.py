@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy import Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import validates, relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
 from fastapi import HTTPException
 from datetime import datetime
@@ -18,21 +18,20 @@ class Base(DeclarativeBase):
     pass
 
 
-ResultFaculty = Table(
-    'result_faculty', Base.metadata,
-    Column('id', Integer, primary_key=True, index=True),
-    Column('result_id', ForeignKey('result.id'), unique=True),
-    Column('faculty_id', ForeignKey('faculty.id'), unique=True),
-    Column('compliance', Integer)
-)
+class ResultFaculty(Base):
+    __tablename__ = 'result_faculty'
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    result_id: Mapped[int] = mapped_column(ForeignKey('result.id'), primary_key=True)
+    faculty_id: Mapped[int] = mapped_column(ForeignKey('faculty.id'), primary_key=True)
+    compliance: Mapped[int] = mapped_column(Integer())
 
-AnswerFaculty = Table(
-    'answer_faculty', Base.metadata,
-    Column('id', Integer, primary_key=True, index=True),
-    Column('answer_id', ForeignKey('answer.id'), unique=True),
-    Column('faculty_id', ForeignKey('faculty.id'), unique=True),
-    Column('score', Integer)
-)
+
+class AnswerFaculty(Base):
+    __tablename__ = 'answer_faculty'
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    answer_id: Mapped[int] = mapped_column(ForeignKey('answer.id'), primary_key=True)
+    faculty_id: Mapped[int] = mapped_column(ForeignKey('faculty.id'), primary_key=True)
+    score: Mapped[int] = mapped_column(Integer())
 
 
 class Result(Base):
@@ -45,7 +44,7 @@ class Result(Base):
     phone_number: Mapped[str] = mapped_column(String())
     dt_created: Mapped[str] = mapped_column(DateTime, default=datetime.now())
 
-    faculties: Mapped[List['Faculty']] = relationship(secondary=ResultFaculty, back_populates='results')
+    faculties: Mapped[List['ResultFaculty']] = relationship(back_populates='result')
 
     @validates('phone_number')
     def validate_phone(self, key, phone_number):
@@ -61,8 +60,8 @@ class Faculty(Base):
     name: Mapped[str] = mapped_column(String(50))
     url: Mapped[str] = mapped_column(String(200))
 
-    results: Mapped[List['Result']] = relationship(secondary=ResultFaculty, back_populates='faculties')
-    answers: Mapped[List['Answer']] = relationship(secondary=AnswerFaculty, back_populates='faculties')
+    results: Mapped[List['ResultFaculty']] = relationship(back_populates='faculty')
+    answers: Mapped[List['AnswerFaculty']] = relationship(back_populates='faculty')
 
 
 class Answer(Base):
@@ -73,7 +72,7 @@ class Answer(Base):
     question_id: Mapped[int] = mapped_column(ForeignKey('question.id'))
 
     question: Mapped['Question'] = relationship(back_populates='answers')
-    faculties: Mapped[List['Faculty']] = relationship(secondary=AnswerFaculty, back_populates='answers')
+    faculties: Mapped[List['AnswerFaculty']] = relationship(back_populates='answer')
 
 
 class Question(Base):
