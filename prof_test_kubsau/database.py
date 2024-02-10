@@ -1,10 +1,7 @@
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
-from sqlalchemy.orm import validates, relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
-from fastapi import HTTPException
+from sqlalchemy import Integer, String, DateTime, ForeignKey
+from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
 from datetime import datetime
-from typing import List
-import re
 
 SQLALCHEMY_DATABASE_URL = 'sqlite:///./sql_app.db'
 
@@ -18,40 +15,47 @@ class Base(DeclarativeBase):
     pass
 
 
-ResultFaculty = Table(
-    'result_faculty', Base.metadata,
-    Column('id', Integer, primary_key=True, index=True),
-    Column('result_id', ForeignKey('result.id'), unique=True),
-    Column('faculty_id', ForeignKey('faculty.id'), unique=True),
-    Column('compliance', Integer)
-)
+class ResultFaculty(Base):
+    """Количество очков, факультета у конкретного результата"""
 
-AnswerFaculty = Table(
-    'answer_faculty', Base.metadata,
-    Column('id', Integer, primary_key=True, index=True),
-    Column('answer_id', ForeignKey('answer.id'), unique=True),
-    Column('faculty_id', ForeignKey('faculty.id'), unique=True),
-    Column('score', Integer)
-)
+    __tablename__ = 'resultfaculty'
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    result_id: Mapped[int] = mapped_column(Integer, ForeignKey('result.id', ondelete='CASCADE'))
+    faculty_id: Mapped[int] = mapped_column(Integer, ForeignKey('faculty.id', ondelete='CASCADE'))
+    score: Mapped[int] = mapped_column(Integer)
+
+    result: Mapped['Result'] = relationship('Result', back_populates='result_faculties')
+    faculty: Mapped['Faculty'] = relationship('Faculty', back_populates='result_faculties')
+
+
+class AnswerFaculty(Base):
+    """Количество очков, присуждающее факультету за выбранный ответ"""
+
+    __tablename__ = 'answerfaculty'
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    answer_id: Mapped[int] = mapped_column(Integer, ForeignKey('answer.id', ondelete='CASCADE'))
+    faculty_id: Mapped[int] = mapped_column(Integer, ForeignKey('faculty.id', ondelete='CASCADE'))
+    score: Mapped[int] = mapped_column(Integer)
+
+    answer: Mapped['Answer'] = relationship('Answer', back_populates='answer_faculties')
+    faculty: Mapped['Faculty'] = relationship('Faculty', back_populates='answer_faculties')
 
 
 class Result(Base):
+    """Результат"""
+
     __tablename__ = 'result'
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     surname: Mapped[str] = mapped_column(String(30))
     name: Mapped[str] = mapped_column(String(30))
-    patronymic: Mapped[str] = mapped_column(String(30))
-    phone_number: Mapped[str] = mapped_column(String())
+    patronymic: Mapped[str] = mapped_column(String(30), default='')
+    phone_number: Mapped[str] = mapped_column(String(11))
     dt_created: Mapped[str] = mapped_column(DateTime, default=datetime.now())
 
-    faculties: Mapped[List['Faculty']] = relationship(secondary=ResultFaculty, back_populates='results')
-
-    @validates('phone_number')
-    def validate_phone(self, key, phone_number):
-        if not re.match(r'79\d{9}', phone_number):
-            raise HTTPException(status_code=422, detail='Phone number should match the pattern "79#########"')
-        return phone_number
+    result_faculties: Mapped[list['ResultFaculty']] = relationship('ResultFaculty', back_populates='result')
 
 
 class Faculty(Base):
@@ -61,8 +65,8 @@ class Faculty(Base):
     name: Mapped[str] = mapped_column(String(50))
     url: Mapped[str] = mapped_column(String(200))
 
-    results: Mapped[List['Result']] = relationship(secondary=ResultFaculty, back_populates='faculties')
-    answers: Mapped[List['Answer']] = relationship(secondary=AnswerFaculty, back_populates='faculties')
+    result_faculties: Mapped[list['ResultFaculty']] = relationship('ResultFaculty', back_populates='faculty')
+    answer_faculties: Mapped[list['AnswerFaculty']] = relationship('AnswerFaculty', back_populates='faculty')
 
 
 class Answer(Base):
@@ -72,8 +76,8 @@ class Answer(Base):
     text: Mapped[str] = mapped_column(String(200))
     question_id: Mapped[int] = mapped_column(ForeignKey('question.id'))
 
-    question: Mapped['Question'] = relationship(back_populates='answers')
-    faculties: Mapped[List['Faculty']] = relationship(secondary=AnswerFaculty, back_populates='answers')
+    question: Mapped['Question'] = relationship('Question', back_populates='answers')
+    answer_faculties: Mapped[list['AnswerFaculty']] = relationship('AnswerFaculty', back_populates='answer')
 
 
 class Question(Base):
@@ -82,7 +86,7 @@ class Question(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     text: Mapped[str] = mapped_column(String(200))
 
-    answers: Mapped[List['Answer']] = relationship(back_populates='question')
+    answers: Mapped[list['Answer']] = relationship('Answer', back_populates='question')
 
 
 Base.metadata.create_all(bind=engine)
