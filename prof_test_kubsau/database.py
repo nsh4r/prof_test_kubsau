@@ -1,92 +1,54 @@
-from sqlalchemy import create_engine
-from sqlalchemy import Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column, sessionmaker
+from sqlmodel import Field, SQLModel, create_engine
 from datetime import datetime
 
-SQLALCHEMY_DATABASE_URL = 'sqlite:///./sql_app.db'
 
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={'check_same_thread': False}, echo=True
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+class ResultFaculty(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    compliance: int | None = Field(default=None)    # посчитанный результат для каждого класса
 
-
-class Base(DeclarativeBase):
-    pass
+    result_id: int | None = Field(default=None, foreign_key='result.id')
+    faculty_id: int | None = Field(default=None, foreign_key='faculty.id')
 
 
-class ResultFaculty(Base):
-    """Количество очков, факультета у конкретного результата"""
+class AnswerFaculty(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    score: int | None = Field(default=None)
 
-    __tablename__ = 'resultfaculty'
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    result_id: Mapped[int] = mapped_column(Integer, ForeignKey('result.id', ondelete='CASCADE'))
-    faculty_id: Mapped[int] = mapped_column(Integer, ForeignKey('faculty.id', ondelete='CASCADE'))
-    score: Mapped[int] = mapped_column(Integer)
-
-    result: Mapped['Result'] = relationship('Result', back_populates='result_faculties')
-    faculty: Mapped['Faculty'] = relationship('Faculty', back_populates='result_faculties')
+    answer_id: int | None = Field(default=None, foreign_key='answer.id')
+    faculty_id: int | None = Field(default=None, foreign_key='faculty.id')
 
 
-class AnswerFaculty(Base):
-    """Количество очков, присуждающее факультету за выбранный ответ"""
-
-    __tablename__ = 'answerfaculty'
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    answer_id: Mapped[int] = mapped_column(Integer, ForeignKey('answer.id', ondelete='CASCADE'))
-    faculty_id: Mapped[int] = mapped_column(Integer, ForeignKey('faculty.id', ondelete='CASCADE'))
-    score: Mapped[int] = mapped_column(Integer)
-
-    answer: Mapped['Answer'] = relationship('Answer', back_populates='answer_faculties')
-    faculty: Mapped['Faculty'] = relationship('Faculty', back_populates='answer_faculties')
+class Result(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    surname: str | None = Field(max_length=30)
+    name: str | None = Field(max_length=30)
+    patronymic: str | None = Field(max_length=30, default=None)
+    phone_number: str | None = Field(max_length=11)
+    dt_created: datetime = Field(default=datetime.now())
 
 
-class Result(Base):
-    """Результат"""
-
-    __tablename__ = 'result'
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    surname: Mapped[str] = mapped_column(String(30))
-    name: Mapped[str] = mapped_column(String(30))
-    patronymic: Mapped[str] = mapped_column(String(30), default='')
-    phone_number: Mapped[str] = mapped_column(String(11))
-    dt_created: Mapped[str] = mapped_column(DateTime, default=datetime.now())
-
-    result_faculties: Mapped[list['ResultFaculty']] = relationship('ResultFaculty', back_populates='result')
+class Faculty(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    name: str | None = Field(max_length=50)
+    type: str | None = Field(max_length=50)
+    url: str | None = Field(max_length=200)
 
 
-class Faculty(Base):
-    __tablename__ = 'faculty'
+class Answer(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    text: str | None = Field(max_length=200)
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(50))
-    url: Mapped[str] = mapped_column(String(200))
-
-    result_faculties: Mapped[list['ResultFaculty']] = relationship('ResultFaculty', back_populates='faculty')
-    answer_faculties: Mapped[list['AnswerFaculty']] = relationship('AnswerFaculty', back_populates='faculty')
+    question_id: int | None = Field(foreign_key='question.id')
 
 
-class Answer(Base):
-    __tablename__ = 'answer'
+class Question(SQLModel, table=True):
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    text: Mapped[str] = mapped_column(String(200))
-    question_id: Mapped[int] = mapped_column(ForeignKey('question.id'))
-
-    question: Mapped['Question'] = relationship('Question', back_populates='answers')
-    answer_faculties: Mapped[list['AnswerFaculty']] = relationship('AnswerFaculty', back_populates='answer')
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    text: str | None = Field(max_length=200)
 
 
-class Question(Base):
-    __tablename__ = 'question'
+sqlite_url = 'sqlite:///../sql_app.db'
 
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    text: Mapped[str] = mapped_column(String(200))
+engine = create_engine(sqlite_url, echo=True)
 
-    answers: Mapped[list['Answer']] = relationship('Answer', back_populates='question')
-
-
-Base.metadata.create_all(bind=engine)
+SQLModel.metadata.create_all(engine)
