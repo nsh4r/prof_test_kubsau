@@ -1,30 +1,36 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from sqlmodel import Field, SQLModel
 
 
-class ResultInfo(BaseModel):
+class ResultInfo(SQLModel):
     """Входные данные для API получения результата"""
+    surname: str = Field(schema_extra={'example': 'Ivanov'})
+    name: str = Field(schema_extra={'example': 'Ivan'})
+    patronymic: str | None = Field(default='', schema_extra={'example': 'Ivanovich'})
+    phone_number: str = Field(schema_extra={'example': '79000000000'}, max_length=11, regex=r'^79\d{9}$')
 
-    surname: str = Field(examples=['Иванов'], min_length=1)
-    name: str = Field(examples=['Иван'], min_length=1)
-    patronymic: str = Field(examples=['Иванович', ''], default='')
-    phone_number: str = Field(examples=['79000000000'], pattern=r'^79\d{9}$')
+
+class FacultyType(SQLModel):
+    """Информация о классификации факультета"""
+
+    name: str = Field(min_length=1, schema_extra={'example': 'Человек-Природа'})
 
 
-class Faculty(BaseModel):
+class Faculty(SQLModel):
     """Информация о факультете"""
 
     name: str = Field(min_length=1)
     url: str = Field(min_length=1)
-    score: int = Field(gt=0)
+    types: int
 
 
-class ResponseResult(BaseModel):
+class ResponseResult(SQLModel):
     """Выходные данные для API получения результата"""
 
-    surname: str = Field(examples=['Ivanov'])
-    name: str = Field(examples=['Ivan'])
-    patronymic: Optional[str] = Field(examples=['Ivanovich'])
-    phone_number: str = Field(max_length=11, examples=['79000000000'])
-    faculties: list[Faculty]
+    surname: str = Field(schema_extra={'example': 'Ivanov'})
+    name: str = Field(schema_extra={'example': 'Ivan'})
+    patronymic: str | None = Field(default='', schema_extra={'example': 'Ivanovich'})
+    phone_number: str = Field(max_length=11, schema_extra={'example': '79000000000'})
+    # faculty_type: str = Field(min_length=1)
+    # faculties: list[Faculty]
+    # compliance: int = Field(gt=0)
 
