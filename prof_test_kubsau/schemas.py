@@ -5,7 +5,7 @@ class ResultInfo(SQLModel):
     """Входные данные для API получения результата"""
     surname: str = Field(schema_extra={'example': 'Ivanov'})
     name: str = Field(schema_extra={'example': 'Ivan'})
-    patronymic: str | None = Field(default='', schema_extra={'example': 'Ivanovich'})
+    patronymic: str | None = Field(default=None, schema_extra={'example': 'Ivanovich'})
     phone_number: str = Field(schema_extra={'example': '79000000000'}, max_length=11, regex=r'^79\d{9}$')
 
 
@@ -20,17 +20,12 @@ class Faculty(SQLModel):
 
     name: str = Field(min_length=1)
     url: str = Field(min_length=1)
-    types: int
 
 
-class ResponseResult(SQLModel):
+class ResponseResult(ResultInfo):
     """Выходные данные для API получения результата"""
 
-    surname: str = Field(schema_extra={'example': 'Ivanov'})
-    name: str = Field(schema_extra={'example': 'Ivan'})
-    patronymic: str | None = Field(default='', schema_extra={'example': 'Ivanovich'})
-    phone_number: str = Field(max_length=11, schema_extra={'example': '79000000000'})
-    # faculty_type: str = Field(min_length=1)
-    # faculties: list[Faculty]
-    # compliance: int = Field(gt=0)
+    faculty_type: str = Field(min_length=1)
+    faculties: list[Faculty]
+    compliance: int = Field(gt=0)
 
