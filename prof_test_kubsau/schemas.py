@@ -9,23 +9,22 @@ class ResultInfo(SQLModel):
     phone_number: str = Field(schema_extra={'example': '79000000000'}, max_length=11, regex=r'^79\d{9}$')
 
 
+class Faculty(SQLModel):
+    """Информация о факультете"""
+
+    name: str = Field(min_length=1, schema_extra={'example': 'Прикладной информатики'})
+    url: str = Field(min_length=1, schema_extra={'example': 'https://...'})
+
+
 class FacultyType(SQLModel):
     """Информация о классификации факультета"""
 
     name: str = Field(min_length=1, schema_extra={'example': 'Человек-Природа'})
-
-
-class Faculty(SQLModel):
-    """Информация о факультете"""
-
-    name: str = Field(min_length=1)
-    url: str = Field(min_length=1)
+    compliance: int = Field(gt=0, schema_extra={'example': '85'})
+    faculties: list[Faculty]
 
 
 class ResponseResult(ResultInfo):
     """Выходные данные для API получения результата"""
 
-    faculty_type: str = Field(min_length=1)
-    faculties: list[Faculty]
-    compliance: int = Field(gt=0)
-
+    faculty_type: list[FacultyType]

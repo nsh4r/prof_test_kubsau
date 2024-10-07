@@ -24,13 +24,17 @@ def get_specific_result(request_result: ResultInfo):
                    .join(ResultFaculty).
                    where(Result.phone_number == db_result.phone_number))    # ваыбираем данные исходя из номера
         result = session.exec(profile).all()
+        print(result)
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Result not found!')
         faculty_type_ids = [item[1].faculty_type_id for item in result]     # получаем номер ледирующего типа факультета
+        print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!{faculty_type_ids}')
         for i in faculty_type_ids:
             query_faculty = (select(Faculty).where(Faculty.type_id == i))   # ищем факультеты принадлежащие к типу
             faculty = session.exec(query_faculty).first()
+            print(f'{faculty}')
             faculties.append(faculty)
+            print(faculties)
         if not faculties:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties not found!')
         for i in faculty_type_ids:

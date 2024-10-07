@@ -7,7 +7,7 @@ class ResultFaculty(SQLModel, table=True):
     compliance: int | None = Field(default=None)    # посчитанный результат для каждого класса
 
     result_id: int | None = Field(default=None, foreign_key='result.id')
-    faculty_type_id: int | None = Field(default=None, foreign_key='faculty.type_id')
+    faculty_type_id: int | None = Field(default=None, foreign_key='facultytype.id')
 
 
 class AnswerFaculty(SQLModel, table=True):
@@ -15,7 +15,7 @@ class AnswerFaculty(SQLModel, table=True):
     score: int | None = Field(default=None)
 
     answer_id: int | None = Field(default=None, foreign_key='answer.id')
-    faculty_type_id: int | None = Field(default=None, foreign_key='faculty.type_id')
+    faculty_type_id: int | None = Field(default=None, foreign_key='facultytype.id')
 
 
 class Result(SQLModel, table=True):
@@ -27,17 +27,17 @@ class Result(SQLModel, table=True):
     dt_created: datetime = Field(default=datetime.now())
 
 
+class FacultyType(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True, index=True)
+    name: str | None = Field(max_length=50)
+
+
 class Faculty(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True, index=True)
     name: str | None = Field(max_length=50)
     url: str | None = Field(max_length=200)
 
     type_id: str | None = Field(default=None, foreign_key='facultytype.id')
-
-
-class FacultyType(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True, index=True)
-    name: str | None = Field(max_length=50)
 
 
 class Answer(SQLModel, table=True):
