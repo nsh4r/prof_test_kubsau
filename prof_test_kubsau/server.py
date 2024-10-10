@@ -20,8 +20,6 @@ def get_specific_result(request_result: ResultInfo):
     # Валидируем модель запроса
     db_result = Result.model_validate(request_result)
 
-    faculties_list = []  # Создаем пустой список для хранения типов факультетов
-
     with Session(engine) as session:
         # Поиск профиля пользователя по номеру телефона
         profile = (select(Result, ResultFaculty)
@@ -52,8 +50,8 @@ def get_specific_result(request_result: ResultInfo):
 
             # Создаем объект FacultyType
             faculty_type_obj = FacultyType(
-                name=faculty_type_result.name,
-                compliance=faculty_type_result.compliance,
+                name=faculty_type_result[0][0].name,
+                compliance=faculty_type_result[0][0].compliance,
                 faculties=faculties
             )
 
