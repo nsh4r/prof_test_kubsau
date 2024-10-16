@@ -19,6 +19,7 @@ def get_specific_result(request_result: ResultInfo):
 
     # Валидируем модель запроса
     db_result = Result.model_validate(request_result)
+    faculties_list = []
 
     with Session(engine) as session:
         # Поиск профиля пользователя по номеру телефона
@@ -37,6 +38,7 @@ def get_specific_result(request_result: ResultInfo):
             # Поиск информации о типе факультета
             faculty_type_query = select(FacultyType).where(FacultyType.id == i)
             faculty_type_result = session.exec(faculty_type_query).first()
+            print(faculty_type_result)
 
             if not faculty_type_result:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties type not found!')
@@ -44,19 +46,24 @@ def get_specific_result(request_result: ResultInfo):
             # Поиск факультетов, относящихся к этому типу
             query_faculty = select(Faculty).where(Faculty.type_id == i)
             faculties = session.exec(query_faculty).all()
+            print(faculties)
 
             if not faculties:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties not found!')
 
+            query_compliance = select(ResultFaculty).where(ResultFaculty.faculty_type_id == i)
+            faculty_type_compliance = session.exec(query_compliance).first()
+
             # Создаем объект FacultyType
             faculty_type_obj = FacultyType(
-                name=faculty_type_result[0][0].name,
-                compliance=faculty_type_result[0][0].compliance,
+                name=faculty_type_result.name,
+                compliance=faculty_type_compliance,
                 faculties=faculties
             )
 
             # Добавляем объект в список
             faculties_list.append(faculty_type_obj)
+            print(faculties_list)
 
     # Создаем объект ResponseResult для ответа
     response_result = ResponseResult(
