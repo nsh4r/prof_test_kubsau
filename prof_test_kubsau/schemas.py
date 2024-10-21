@@ -16,7 +16,7 @@ class Faculty(SQLModel):
     url: str = Field(min_length=1, schema_extra={'example': 'https://...'})
 
 
-class FacultyType(SQLModel):
+class FacultyTypeSch(SQLModel):
     """Информация о классификации факультета"""
 
     name: str = Field(min_length=1, schema_extra={'example': 'Человек-Природа'})
@@ -27,4 +27,4 @@ class FacultyType(SQLModel):
 class ResponseResult(ResultInfo):
     """Выходные данные для API получения результата"""
 
-    faculty_type: list[FacultyType]
+    faculty_type: list[FacultyTypeSch]

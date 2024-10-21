@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlmodel import Session, select
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyType
+from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch
 from prof_test_kubsau.database import Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, engine
 
 app = FastAPI()
@@ -22,7 +22,6 @@ def get_specific_result(request_result: ResultInfo):
     faculties_list = []
 
     with Session(engine) as session:
-        # Поиск профиля пользователя по номеру телефона
         profile = (select(Result, ResultFaculty)
                    .join(ResultFaculty)
                    .where(Result.phone_number == db_result.phone_number))
@@ -31,31 +30,25 @@ def get_specific_result(request_result: ResultInfo):
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Result not found!')
 
-        # Получаем ID типов факультетов
         faculty_type_ids = [item[1].faculty_type_id for item in result]
 
         for i in faculty_type_ids:
-            # Поиск информации о типе факультета
             faculty_type_query = select(FacultyType).where(FacultyType.id == i)
             faculty_type_result = session.exec(faculty_type_query).first()
-            print(faculty_type_result)
 
             if not faculty_type_result:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties type not found!')
 
-            # Поиск факультетов, относящихся к этому типу
             query_faculty = select(Faculty).where(Faculty.type_id == i)
             faculties = session.exec(query_faculty).all()
-            print(faculties)
 
             if not faculties:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties not found!')
 
-            query_compliance = select(ResultFaculty).where(ResultFaculty.faculty_type_id == i)
+            query_compliance = select(ResultFaculty.compliance).where(ResultFaculty.faculty_type_id == i)
             faculty_type_compliance = session.exec(query_compliance).first()
 
-            # Создаем объект FacultyType
-            faculty_type_obj = FacultyType(
+            faculty_type_obj = FacultyTypeSch(
                 name=faculty_type_result.name,
                 compliance=faculty_type_compliance,
                 faculties=faculties
@@ -63,7 +56,6 @@ def get_specific_result(request_result: ResultInfo):
 
             # Добавляем объект в список
             faculties_list.append(faculty_type_obj)
-            print(faculties_list)
 
     # Создаем объект ResponseResult для ответа
     response_result = ResponseResult(
