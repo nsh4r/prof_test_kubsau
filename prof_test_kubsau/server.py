@@ -67,3 +67,5 @@ def get_specific_result(request_result: ResultInfo):
     )
 
     return response_result
+
+@app.get('/api/test/', response_model=)
