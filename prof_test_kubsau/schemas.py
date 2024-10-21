@@ -28,3 +28,22 @@ class ResponseResult(ResultInfo):
     """Выходные данные для API получения результата"""
 
     faculty_type: list[FacultyTypeSch]
+
+
+class Answer(SQLModel):
+    """Информация о классификации факультета"""
+
+    text: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Возможно'})
+
+
+class Question(SQLModel):
+    """Вопрос с ответами"""
+
+    question: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Любите гладить траву?'})
+    answers: list[Answer]
+
+
+class QuestionsResponse(SQLModel):
+    """Список с вопросами для формы"""
+
+    questions: list[Question]

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlmodel import Session, select
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch
+from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionsResponse
 from prof_test_kubsau.database import Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, engine
 
 app = FastAPI()
@@ -15,9 +15,8 @@ def on_startup():
 @app.post('/api/test/result/', response_model=ResponseResult)
 def get_specific_result(request_result: ResultInfo):
     """Получает данные в теле запроса, производит поиск по номеру телефона.
-    Если результат не найден, возвращает ошибку 404."""
+    Если результат не найден, возвращает ошибку 404. Иначе выдает профиль с результатами опроса"""
 
-    # Валидируем модель запроса
     db_result = Result.model_validate(request_result)
     faculties_list = []
 
@@ -68,4 +67,8 @@ def get_specific_result(request_result: ResultInfo):
 
     return response_result
 
-@app.get('/api/test/', response_model=)
+
+@app.get('/api/test/', response_model=QuestionsResponse)
+def get_questions_list():
+    """В случае отсутствия вопросов или ответов на них выведет статус 404, иначе список вопросов с ответами"""
+    pass
