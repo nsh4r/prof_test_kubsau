@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlmodel import Session, select
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionsResponse
-from prof_test_kubsau.database import Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, engine
+from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, Question
+from prof_test_kubsau.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
+                                       Answer, engine)
 
 app = FastAPI()
 
@@ -71,4 +72,6 @@ def get_specific_result(request_result: ResultInfo):
 @app.get('/api/test/', response_model=QuestionsResponse)
 def get_questions_list():
     """В случае отсутствия вопросов или ответов на них выведет статус 404, иначе список вопросов с ответами"""
-    pass
+
+    with Session(engine) as session:
+        QuestionsQuery = (select(Question, Answer))

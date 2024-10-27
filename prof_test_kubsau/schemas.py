@@ -41,9 +41,3 @@ class Question(SQLModel):
 
     question: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Любите гладить траву?'})
     answers: list[Answer]
-
-
-class QuestionsResponse(SQLModel):
-    """Список с вопросами для формы"""
-
-    questions: list[Question]
