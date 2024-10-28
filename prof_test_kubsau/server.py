@@ -69,9 +69,13 @@ def get_specific_result(request_result: ResultInfo):
     return response_result
 
 
-@app.get('/api/test/', response_model=QuestionsResponse)
+@app.get('/api/test/', response_model=list[Question])
 def get_questions_list():
     """В случае отсутствия вопросов или ответов на них выведет статус 404, иначе список вопросов с ответами"""
 
     with Session(engine) as session:
-        QuestionsQuery = (select(Question, Answer))
+        questions_query = select(Question)
+        question_res_query = session.exec(questions_query).all()
+    if not question_res_query:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
+    return True
