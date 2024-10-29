@@ -74,8 +74,8 @@ def get_questions_list():
     """В случае отсутствия вопросов или ответов на них выведет статус 404, иначе список вопросов с ответами"""
 
     with Session(engine) as session:
-        questions_query = select(Question)
+        questions_query = select(Question, Answer).join(Answer).where(Question.id == Answer.question_id)
         question_res_query = session.exec(questions_query).all()
     if not question_res_query:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
-    return True
+    return
