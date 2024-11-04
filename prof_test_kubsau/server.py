@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlmodel import Session, select
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, Question
+from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, AnswerSch
 from prof_test_kubsau.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
                                        Answer, engine)
 
@@ -69,13 +69,34 @@ def get_specific_result(request_result: ResultInfo):
     return response_result
 
 
-@app.get('/api/test/', response_model=list[Question])
+@app.get('/api/test/', response_model=list[QuestionSch])
 def get_questions_list():
     """В случае отсутствия вопросов или ответов на них выведет статус 404, иначе список вопросов с ответами"""
+
+    questions_dict = {}
 
     with Session(engine) as session:
         questions_query = select(Question, Answer).join(Answer).where(Question.id == Answer.question_id)
         question_res_query = session.exec(questions_query).all()
     if not question_res_query:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
-    return
+
+    for question, answer in question_res_query:
+        if question.id not in questions_dict:
+            questions_dict[question.id] = {
+                "id": question.id,
+                "question": question.text,
+                "answers": [],
+            }
+        questions_dict[question.id]["answers"].append(answer)
+    print(questions_dict)
+
+    query_result = []
+    for question_data in questions_dict.values():
+        print(question_data["question"])
+        query_result.append(QuestionSch(id=question_data["id"],
+                                        question=question_data["question"],
+                                        answers=question_data["answers"],))
+
+    return query_result
+

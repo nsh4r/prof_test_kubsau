@@ -30,14 +30,16 @@ class ResponseResult(ResultInfo):
     faculty_type: list[FacultyTypeSch]
 
 
-class Answer(SQLModel):
+class AnswerSch(SQLModel):
     """Информация о классификации факультета"""
 
+    id: int | None = Field(default=None, primary_key=True)
     text: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Возможно'})
 
 
-class Question(SQLModel):
+class QuestionSch(SQLModel):
     """Вопрос с ответами"""
 
+    id: int | None = Field(default=None, primary_key=True)
     question: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Любите гладить траву?'})
-    answers: list[Answer]
+    answers: list[AnswerSch]
