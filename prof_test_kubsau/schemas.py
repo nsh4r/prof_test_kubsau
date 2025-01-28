@@ -46,6 +46,6 @@ class QuestionSch(SQLModel):
 
 
 class UserAnswers(SQLModel):
-    """Ответы пользователей"""
-
-    id: int | None = Field(default=None, primary_key=True)
+    """Ответы пользователя"""
+    question_id: int = Field(default=None, schema_extra={'example': 1})
+    answer_ids: list[int] = Field(default=None, schema_extra={'example': [1, 2]})

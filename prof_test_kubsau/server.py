@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Body
 from sqlmodel import Session, select
+from typing import List
 
 from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, UserAnswers
 from prof_test_kubsau.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
-                                       Answer, engine)
+                                       Answer, AnswerFaculty, engine)
 
 app = FastAPI()
 
@@ -101,8 +102,72 @@ def get_questions_list():
     return query_result
 
 
-@app.post('/api/test/answers/')
-def calc_result(Answers: List[UserAnswers]):
-    """Принимает ответы и расчитывает результат, если тело запросо не содержит ответов выводит 400"""
+@app.post('/api/test/answers/', response_model=ResponseResult)
+def calc_result(answers: List[UserAnswers] = Body(...)):
+    """Принимает ответы и рассчитывает результат"""
 
-    pass
+    if not answers:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Answers are required")
+
+    with Session(engine) as session:
+        # Словарь для хранения баллов по каждому направлению
+        faculty_scores = {}
+
+        # Проходим по всем ответам пользователя
+        for user_answer in answers:
+            # Проверяем наличие вопроса
+            question_query = select(Question).where(Question.id == user_answer.question_id)
+            question = session.exec(question_query).first()
+            if not question:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail=f"Question {user_answer.question_id} not found")
+
+            # Проверяем ответы
+            for answer_id in user_answer.answer_ids:
+                answer_query = select(Answer).where(Answer.id == answer_id)
+                answer = session.exec(answer_query).first()
+                if not answer:
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Answer {answer_id} not found")
+
+                # Находим связь ответа с направлениями и их баллами
+                answer_faculty_query = select(AnswerFaculty).where(AnswerFaculty.answer_id == answer_id)
+                answer_faculties = session.exec(answer_faculty_query).all()
+
+                for answer_faculty in answer_faculties:
+                    faculty_type_id = answer_faculty.faculty_type_id
+                    score = answer_faculty.score or 0
+
+                    # Суммируем баллы для каждого направления
+                    if faculty_type_id in faculty_scores:
+                        faculty_scores[faculty_type_id] += score
+                    else:
+                        faculty_scores[faculty_type_id] = score
+
+        # Формируем список направлений с баллами и факультетами
+        faculties_list = []
+        for faculty_type_id, score in faculty_scores.items():
+            faculty_type_query = select(FacultyType).where(FacultyType.id == faculty_type_id)
+            faculty_type = session.exec(faculty_type_query).first()
+            if not faculty_type:
+                continue
+
+            faculty_query = select(Faculty).where(Faculty.type_id == faculty_type_id)
+            faculties = session.exec(faculty_query).all()
+
+            faculty_type_obj = FacultyTypeSch(
+                name=faculty_type.name,
+                compliance=score,
+                faculties=faculties
+            )
+            faculties_list.append(faculty_type_obj)
+
+        # Создаем результат
+        response_result = ResponseResult(
+            surname="TestSurname",  # Здесь можно указать данные пользователя
+            name="TestName",  # или передать их через тело запроса
+            patronymic=None,
+            phone_number="00000000000",
+            faculty_type=faculties_list
+        )
+
+    return response_result
