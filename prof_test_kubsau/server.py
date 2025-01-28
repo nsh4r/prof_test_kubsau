@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlmodel import Session, select
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, AnswerSch
+from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, UserAnswers
 from prof_test_kubsau.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
                                        Answer, engine)
 
@@ -100,3 +100,9 @@ def get_questions_list():
 
     return query_result
 
+
+@app.post('/api/test/answers/')
+def calc_result(Answers: List[UserAnswers]):
+    """Принимает ответы и расчитывает результат, если тело запросо не содержит ответов выводит 400"""
+
+    pass

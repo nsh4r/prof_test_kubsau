@@ -43,3 +43,9 @@ class QuestionSch(SQLModel):
     id: int | None = Field(default=None, primary_key=True)
     question: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Любите гладить траву?'})
     answers: list[AnswerSch]
+
+
+class UserAnswers(SQLModel):
+    """Ответы пользователей"""
+
+    id: int | None = Field(default=None, primary_key=True)
