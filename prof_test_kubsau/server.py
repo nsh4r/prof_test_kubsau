@@ -103,56 +103,64 @@ def get_questions_list():
 
 
 @app.post('/api/test/answers/', response_model=ResponseResult)
-def calc_result(answers: List[UserAnswers] = Body(...)):
-    """Принимает ответы и рассчитывает результат"""
+def calc_result(user_data: UserAnswers = Body(...)):
+    """Принимает ответы и рассчитывает результат, сохраняя данные пользователя"""
 
-    if not answers:
+    if not user_data.answers:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Answers are required")
 
     with Session(engine) as session:
-        # Словарь для хранения баллов по каждому направлению
+        # Проверяем, существует ли уже результат с таким номером
+        existing_result = session.exec(select(Result).where(Result.phone_number == user_data.phone_number)).first()
+
+        if existing_result:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Result already exists for this phone number")
+
+        # Создаем новый объект Result
+        new_result = Result(
+            surname=user_data.surname,
+            name=user_data.name,
+            patronymic=user_data.patronymic,
+            phone_number=user_data.phone_number
+        )
+        session.add(new_result)
+        session.commit()
+        session.refresh(new_result)
+
+        # Словарь для хранения баллов по направлениям
         faculty_scores = {}
 
-        # Проходим по всем ответам пользователя
-        for user_answer in answers:
-            # Проверяем наличие вопроса
-            question_query = select(Question).where(Question.id == user_answer.question_id)
-            question = session.exec(question_query).first()
-            if not question:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                    detail=f"Question {user_answer.question_id} not found")
+        # Обрабатываем ответы
+        for answer_data in user_data.answers:
+            question_id = answer_data["question_id"]
+            answer_ids = answer_data["answer_ids"]
 
-            # Проверяем ответы
-            for answer_id in user_answer.answer_ids:
-                answer_query = select(Answer).where(Answer.id == answer_id)
-                answer = session.exec(answer_query).first()
+            question = session.exec(select(Question).where(Question.id == question_id)).first()
+            if not question:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Question {question_id} not found")
+
+            for answer_id in answer_ids:
+                answer = session.exec(select(Answer).where(Answer.id == answer_id)).first()
                 if not answer:
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Answer {answer_id} not found")
 
-                # Находим связь ответа с направлениями и их баллами
-                answer_faculty_query = select(AnswerFaculty).where(AnswerFaculty.answer_id == answer_id)
-                answer_faculties = session.exec(answer_faculty_query).all()
-
+                # Получаем баллы за ответ
+                answer_faculties = session.exec(select(AnswerFaculty).where(AnswerFaculty.answer_id == answer_id)).all()
                 for answer_faculty in answer_faculties:
                     faculty_type_id = answer_faculty.faculty_type_id
                     score = answer_faculty.score or 0
 
-                    # Суммируем баллы для каждого направления
-                    if faculty_type_id in faculty_scores:
-                        faculty_scores[faculty_type_id] += score
-                    else:
-                        faculty_scores[faculty_type_id] = score
+                    faculty_scores[faculty_type_id] = faculty_scores.get(faculty_type_id, 0) + score
 
         # Формируем список направлений с баллами и факультетами
         faculties_list = []
         for faculty_type_id, score in faculty_scores.items():
-            faculty_type_query = select(FacultyType).where(FacultyType.id == faculty_type_id)
-            faculty_type = session.exec(faculty_type_query).first()
+            faculty_type = session.exec(select(FacultyType).where(FacultyType.id == faculty_type_id)).first()
             if not faculty_type:
                 continue
 
-            faculty_query = select(Faculty).where(Faculty.type_id == faculty_type_id)
-            faculties = session.exec(faculty_query).all()
+            faculties = session.exec(select(Faculty).where(Faculty.type_id == faculty_type_id)).all()
 
             faculty_type_obj = FacultyTypeSch(
                 name=faculty_type.name,
@@ -161,13 +169,24 @@ def calc_result(answers: List[UserAnswers] = Body(...)):
             )
             faculties_list.append(faculty_type_obj)
 
-        # Создаем результат
+            # Сохраняем результат соответствия
+            result_faculty = ResultFaculty(
+                result_id=new_result.id,
+                faculty_type_id=faculty_type_id,
+                compliance=score
+            )
+            session.add(result_faculty)
+
+        session.commit()
+
+        # Возвращаем результат
         response_result = ResponseResult(
-            surname="TestSurname",  # Здесь можно указать данные пользователя
-            name="TestName",  # или передать их через тело запроса
-            patronymic=None,
-            phone_number="00000000000",
+            surname=new_result.surname,
+            name=new_result.name,
+            patronymic=new_result.patronymic,
+            phone_number=new_result.phone_number,
             faculty_type=faculties_list
         )
 
     return response_result
+
