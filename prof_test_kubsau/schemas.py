@@ -45,9 +45,15 @@ class QuestionSch(SQLModel):
     answers: list[AnswerSch]
 
 
+class AnswerInput(SQLModel):
+    """Ответ пользователя на конкретный вопрос"""
+    question_id: int = Field(schema_extra={"example": 1})
+    answer_ids: list[int] = Field(schema_extra={"example": [1, 2]})
+
+
 class UserAnswers(ResultInfo):
     """Ответы пользователя"""
-    answers: list[dict[str, list[int]]] = Field(schema_extra={'example': [
+    answers: list[AnswerInput] = Field(schema_extra={'example': [
         {"question_id": 1, "answer_ids": [1, 2]},
         {"question_id": 2, "answer_ids": [3]}
     ]})
