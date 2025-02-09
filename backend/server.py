@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException, status, Body
 from sqlmodel import Session, select
 from typing import List
 
-from prof_test_kubsau.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, UserAnswers
-from prof_test_kubsau.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
-                                       Answer, AnswerFaculty, engine)
+from backend.schemas import ResultInfo, ResponseResult, FacultyTypeSch, QuestionSch, UserAnswers
+from backend.database import (Result, create_db_and_tables, Faculty, ResultFaculty, FacultyType, Question,
+                              Answer, AnswerFaculty, engine)
 
 app = FastAPI()
 

@@ -2,10 +2,10 @@ import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
 
-from prof_test_kubsau.database import Base, engine, Result
-from prof_test_kubsau.server import app
-from prof_test_kubsau.tests.factories import ResultFactory
-from prof_test_kubsau.tests.utils import TestConstants, Session
+from backend.database import Base, engine, Result
+from backend.server import app
+from backend.tests.factories import ResultFactory
+from backend.tests.utils import TestConstants, Session
 
 client = TestClient(app)
 
