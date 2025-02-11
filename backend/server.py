@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Body
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session, select
 from typing import List
 
@@ -7,6 +8,14 @@ from backend.database import (Result, create_db_and_tables, Faculty, ResultFacul
                               Answer, AnswerFaculty, engine)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
