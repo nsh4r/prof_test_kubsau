@@ -1,7 +1,7 @@
 import factory
 
-from prof_test_kubsau.database import Result
-from prof_test_kubsau.tests.utils import Session
+from backend.database import Result
+from backend.tests.utils import Session
 
 
 class ResultFactory(factory.alchemy.SQLAlchemyModelFactory):
