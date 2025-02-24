@@ -1,6 +1,6 @@
 import factory
 
-from backend.database import Result
+from backend.modules.database import Result
 from backend.tests.utils import Session
 
 

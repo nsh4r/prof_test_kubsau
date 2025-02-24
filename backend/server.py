@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, status, Body
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
-from backend.database import create_db_and_tables
+from backend.modules.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
+from backend.modules.database import create_db_and_tables
 from backend.modules.api_test import get_result_by_phone, get_all_questions, process_user_answers
 
 app = FastAPI()

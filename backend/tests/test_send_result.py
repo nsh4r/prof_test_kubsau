@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
 
-from backend.database import Base, engine, Result
+from backend.modules.database import Base, engine, Result
 from backend.server import app
 from backend.tests.factories import ResultFactory
 from backend.tests.utils import TestConstants, Session
