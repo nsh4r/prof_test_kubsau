@@ -1,10 +1,20 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.modules.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
-from backend.modules.database import create_db_and_tables
-from backend.modules.api_test import get_result_by_phone, get_all_questions, process_user_answers
 
-app = FastAPI()
+from backend.modules.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
+from backend.modules.database import init_db
+from backend.modules.api_test import get_result_by_phone, get_all_questions, process_user_answers
+from backend.modules.models import ResultFaculty, AnswerFaculty, Result, FacultyType, Faculty, Answer, Question
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -13,11 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 
 @app.post('/api/test/result/', response_model=ResponseResult)
