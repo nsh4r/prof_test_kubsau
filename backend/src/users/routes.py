@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session, select
-from backend.modules.models import engine, Result, Faculty, ResultFaculty, FacultyType, Question, Answer, AnswerFaculty
-from backend.modules.schemas import ResponseResult, FacultyTypeSch
+from backend.src.database.models import engine, Result, Faculty, ResultFaculty, FacultyType, Question, Answer, AnswerFaculty
+from backend.src.users.schemas import ResponseResult, FacultyTypeSch
 
 def get_result_by_phone(request_result):
     with Session(engine) as session:
