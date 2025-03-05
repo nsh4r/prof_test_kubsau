@@ -1,5 +1,6 @@
-from sqlmodel import Field, SQLModel, create_engine, Session
+from sqlmodel import Field, Column, SQLModel
 from datetime import datetime
+from uuid import UUID, uuid4
 
 
 class ResultFaculty(SQLModel, table=True):
