@@ -28,6 +28,5 @@ async def get_session() -> AsyncSession:
         expire_on_commit=False
     )
 
-
     async with async_session() as session:
         yield session
