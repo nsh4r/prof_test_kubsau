@@ -11,7 +11,7 @@ services:
       - postgres
     volumes:
       - .:/opt/app
-    command: ["poetry", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["poetry", "run", "uvicorn", "backend.src:app", "--host", "0.0.0.0", "--port", "8000"]
 
   postgres:
     image: postgres:15-alpine

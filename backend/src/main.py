@@ -3,9 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.src.users.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
+from backend.src.applicants.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
 from backend.src.database import init_db
-from backend.src.users.routes import get_result_by_phone, get_all_questions, process_user_answers
+from backend.src.applicants.routes import get_result_by_phone, get_all_questions, process_user_answers
 
 
 @asynccontextmanager
