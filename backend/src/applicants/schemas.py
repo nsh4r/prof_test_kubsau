@@ -33,27 +33,29 @@ class ResponseResult(ResultInfo):
 class AnswerSch(SQLModel):
     """Информация о классификации факультета"""
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: str | None = Field(default=None, primary_key=True)
     text: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Возможно'})
 
 
 class QuestionSch(SQLModel):
     """Вопрос с ответами"""
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: str | None = Field(default=None, primary_key=True)
     question: str = Field(min_length=1, max_length=200, schema_extra={'example': 'Любите гладить траву?'})
     answers: list[AnswerSch]
 
 
 class AnswerInput(SQLModel):
     """Ответ пользователя на конкретный вопрос"""
-    question_id: int = Field(schema_extra={"example": 1})
-    answer_ids: list[int] = Field(schema_extra={"example": [1, 2]})
+    question_id: str = Field(schema_extra={"example": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad"})
+    answer_ids: list[str] = Field(schema_extra={"example": ["418ec475-5604-4789-a90f-269c879ea9ed",
+                                                            "0af41b33-1780-4603-ba5c-4777496fcce7"]})
 
 
 class UserAnswers(ResultInfo):
     """Ответы пользователя"""
     answers: list[AnswerInput] = Field(schema_extra={'example': [
-        {"question_id": 1, "answer_ids": [1, 2]},
-        {"question_id": 2, "answer_ids": [3]}
+        {"question_id": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad", "answer_ids": ["418ec475-5604-4789-a90f-269c879ea9ed",
+                                                                               "0af41b33-1780-4603-ba5c-4777496fcce7"]},
+        {"question_id": "df2c6f0c-4d4f-4803-a573-c74c9c96f57f", "answer_ids": ["8cbbd1d1-e2b1-45b6-a210-b86018adb25b"]}
     ]})
