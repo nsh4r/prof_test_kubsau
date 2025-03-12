@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.src.applicants.schemas import ResultInfo, ResponseResult, QuestionSch, UserAnswers
-from backend.src.database import init_db
-from backend.src.applicants.routes import get_result_by_phone, get_all_questions, process_user_answers
+from backend.src.database.main import init_db
+from backend.src.applicants.routes import get_result_by_phone, get_all_questions, process_user_answers, api_router
 
 
 @asynccontextmanager
@@ -15,14 +15,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 @app.post('/api/test/result/', response_model=ResponseResult)

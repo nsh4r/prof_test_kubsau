@@ -25,7 +25,8 @@ class ResultService:
         """
         profile = (select(Result, ResultFaculty).join(ResultFaculty).
                    where(Result.phone_number == phone_number))
-        result = await self.session.exec(profile).all()
+        result = await self.session.exec(profile)
+        result = result.all()
 
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Result not found!')
@@ -34,20 +35,21 @@ class ResultService:
         faculty_type_ids = [item[1].faculty_type_id for item in result]
 
         for i in faculty_type_ids:
-            faculty_type_result = await self.session.exec(select(FacultyType).
-                                                          where(FacultyType.id == i)).first()
+            faculty_type_result = await self.session.exec(select(FacultyType).where(FacultyType.uid == i))
+            faculty_type_result = faculty_type_result.first()
 
             if not faculty_type_result:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties type not found!')
 
-            faculties = await self.session.exec(select(Faculty).
-                                                where(Faculty.type_id == i)).all()
+            faculties = await self.session.exec(select(Faculty).where(Faculty.type_id == i))
+            faculties = faculties.all()
 
             if not faculties:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties not found!')
 
             faculty_type_compliance = await self.session.exec(select(ResultFaculty.compliance).
-                                                              where(ResultFaculty.faculty_type_id == i)).first()
+                                                              where(ResultFaculty.faculty_type_id == i))
+            faculty_type_compliance = faculty_type_compliance.first()
 
             faculty_type_obj = FacultyTypeSch(
                 name=faculty_type_result.name,
@@ -76,11 +78,14 @@ class ResultService:
             ResponseResult: The result object.
         """
         existing_result = await self.session.exec(select(Result).
-                                                  where(Result.phone_number == user_data.phone_number)).first()
+                                                  where(Result.phone_number == user_data.phone_number))
+        existing_result = existing_result.first()
 
         if existing_result:
             existing_faculties = await self.session.exec(select(ResultFaculty).
-                                                         where(ResultFaculty.result_id == existing_result.id)).all()
+                                                         where(ResultFaculty.result_id == existing_result.uid))
+            existing_faculties = existing_faculties.all()
+
             for faculty in existing_faculties:
                 await self.session.delete(faculty)
             await self.session.delete(existing_result)
@@ -101,7 +106,9 @@ class ResultService:
         for answer_data in user_data.answers:
             for answer_id in answer_data.answer_ids:
                 answer_faculties = await self.session.exec(select(AnswerFaculty).
-                                                           where(AnswerFaculty.answer_id == answer_id)).all()
+                                                           where(AnswerFaculty.answer_id == answer_id))
+                answer_faculties = answer_faculties.all()
+
                 for answer_faculty in answer_faculties:
                     faculty_scores[answer_faculty.faculty_type_id] =\
                         (faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0))
@@ -109,12 +116,15 @@ class ResultService:
         faculties_list = []
         for faculty_type_id, score in faculty_scores.items():
             faculty_type = await self.session.exec(select(FacultyType).
-                                                   where(FacultyType.id == faculty_type_id)).first()
+                                                   where(FacultyType.uid == faculty_type_id))
+            faculty_type = faculty_type.first()
+
             if not faculty_type:
                 continue
 
             faculties = await self.session.exec(select(Faculty).
-                                                where(Faculty.type_id == faculty_type_id)).all()
+                                                where(Faculty.type_id == faculty_type_id))
+            faculties = faculties.all()
 
             faculty_type_obj = FacultyTypeSch(
                 name=faculty_type.name,
@@ -124,7 +134,7 @@ class ResultService:
             faculties_list.append(faculty_type_obj)
 
             result_faculty = ResultFaculty(
-                result_id=new_result.id,
+                result_id=new_result.uid,
                 faculty_type_id=faculty_type_id,
                 compliance=score
             )
@@ -158,20 +168,21 @@ class QuestionService:
         questions_dict = {}
 
         questions_query = (select(Question, Answer).join(Answer).
-                           where(Question.id == Answer.question_id))
-        question_res_query = await self.session.exec(questions_query).all()
+                           where(Question.uid == Answer.question_id))
+        question_res_query = await self.session.exec(questions_query)
+        question_res_query = question_res_query.all()
 
         if not question_res_query:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
 
         for question, answer in question_res_query:
-            if question.id not in questions_dict:
-                questions_dict[question.id] = {
-                    "id": question.id,
+            if question.uid not in questions_dict:
+                questions_dict[question.uid] = {
+                    "id": question.uid,
                     "question": question.text,
                     "answers": [],
                 }
-            questions_dict[question.id]["answers"].append(answer)
+            questions_dict[question.uid]["answers"].append(answer)
 
         return [
             {"id": q["id"], "question": q["question"], "answers": q["answers"]}

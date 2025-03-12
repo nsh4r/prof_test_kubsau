@@ -15,7 +15,7 @@ class ResultFaculty(SQLModel, table=True):
     compliance: int | None = Field(default=None)
 
     result_id: UUID = Field(default=None, foreign_key='result.uid')
-    faculty_type_id: UUID = Field(default=None, foreign_key='facultytype.uid')
+    faculty_type_id: UUID = Field(default=None, foreign_key='faculty_type.uid')
 
 
 class AnswerFaculty(SQLModel, table=True):
@@ -29,7 +29,7 @@ class AnswerFaculty(SQLModel, table=True):
     score: int | None = Field(default=None)
 
     answer_id: UUID = Field(default=None, foreign_key='answer.uid')
-    faculty_type_id: UUID = Field(default=None, foreign_key='facultytype.uid')
+    faculty_type_id: UUID = Field(default=None, foreign_key='faculty_type.uid')
 
 
 class Result(SQLModel, table=True):
@@ -69,7 +69,7 @@ class Faculty(SQLModel, table=True):
     name: str | None = Field(max_length=50)
     url: str | None = Field(max_length=200)
 
-    type_id: UUID = Field(default=None, foreign_key='facultytype.uid')
+    type_id: UUID = Field(default=None, foreign_key='faculty_type.uid')
 
 
 class Answer(SQLModel, table=True):

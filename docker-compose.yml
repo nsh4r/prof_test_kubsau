@@ -1,17 +1,17 @@
 services:
   app:
     build:
-      context: ..
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./Dockerfile
     ports:
-      - "8000:8080"
-#    env_file:
-#      - .env
+      - "8080:8080"
+    env_file:
+      - .env
     depends_on:
       - postgres
     volumes:
       - .:/opt/app
-    command: ["poetry", "run", "uvicorn", "backend.src:app", "--host", "${BE_HOST}", "--port", "${BE_PORT}"]
+#    command: ["poetry", "run", "uvicorn", "backend.src:app", "--host", "${BE_HOST}", "--port", "${BE_PORT}"]
 
   postgres:
     image: postgres:15-alpine

@@ -4,7 +4,7 @@ from backend.src.database.main import get_session
 from backend.src.applicants.schemas import ResponseResult
 from .service import ResultService, QuestionService
 
-api_router = APIRouter(prefix="/api")
+api_router = APIRouter(prefix="/backend/api")
 
 
 @api_router.get("/results/{phone_number}", response_model=ResponseResult)
