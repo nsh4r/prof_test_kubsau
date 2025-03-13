@@ -3,20 +3,19 @@ services:
     image: nsh4r/backend-app:0.0.1
     restart: always
     ports:
-      - "8080:8080"
+      - "20000:8080"
     env_file:
       - .env
     depends_on:
       - postgres
     volumes:
       - .:/opt/app
-#    command: ["poetry", "run", "uvicorn", "backend.src:app", "--host", "${BE_HOST}", "--port", "${BE_PORT}"]
 
   postgres:
     image: postgres:15-alpine
     restart: always
     ports:
-      - "5432:${DB_PORT}"
+      - "55432:${DB_PORT}"
     env_file:
       - .env
     environment:
