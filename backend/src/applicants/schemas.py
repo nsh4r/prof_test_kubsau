@@ -20,7 +20,7 @@ class FacultyTypeSch(SQLModel):
     """Информация о классификации факультета"""
 
     name: str = Field(min_length=1, schema_extra={'example': 'Человек-Природа'})
-    compliance: int = Field(gt=0, schema_extra={'example': '85'})
+    compliance: int = Field(gt=0, schema_extra={'example': '1'})
     faculties: list[Faculty]
 
 
