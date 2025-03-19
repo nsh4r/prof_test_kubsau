@@ -1,25 +1,25 @@
 from fastapi import APIRouter, Depends, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from backend.src.database.main import get_session
-from backend.src.applicants.schemas import ResponseResult, ApplicantAnswers
+from backend.src.applicants.schemas import ResponseResult, ApplicantAnswers, ApplicantInfo
 from .service import ResultService, QuestionService
 
 api_router = APIRouter(prefix="/backend/api")
 
 
-@api_router.get("/results/{phone_number}", response_model=ResponseResult)
-async def get_result_by_phone(phone_number: str, session: AsyncSession = Depends(get_session)):
+@api_router.post("/applicant/by-data/", status_code=status.HTTP_201_CREATED, response_model=ResponseResult)
+async def post_result_by_data(user_data: ApplicantInfo, session: AsyncSession = Depends(get_session)):
     """
-    Get a result by phone number.
+    Find or create an applicant by full name and phone number.
 
     Args:
-        phone_number (str): The phone number of the result.
+        user_data: The user data containing surname, name, patronymic, and phone_number.
         session
 
     Returns:
         ResponseResult: The result object.
     """
-    return await ResultService(session).get_result_by_phone(phone_number)
+    return await ResultService(session).post_result_by_data(user_data)
 
 
 @api_router.post("/results/", status_code=status.HTTP_201_CREATED, response_model=ResponseResult)

@@ -43,7 +43,7 @@ class Applicant(SQLModel, table=True):
     surname: str | None = Field(max_length=30)
     name: str | None = Field(max_length=30)
     patronymic: str | None = Field(max_length=30, default=None)
-    phone_number: str | None = Field(max_length=11)
+    phone_number: str | None = Field(max_length=11, unique=True)
     dt_created: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
 
 

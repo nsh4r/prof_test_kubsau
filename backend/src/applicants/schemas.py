@@ -1,5 +1,5 @@
 from sqlmodel import Field, SQLModel
-
+from uuid import UUID
 
 class ApplicantInfo(SQLModel):
     """Входные данные для API получения результата"""
@@ -20,13 +20,13 @@ class FacultyTypeSch(SQLModel):
     """Информация о классификации факультета"""
 
     name: str = Field(min_length=1, schema_extra={'example': 'Человек-Природа'})
-    compliance: int = Field(gt=0, schema_extra={'example': '1'})
+    compliance: int = Field(ge=0, schema_extra={'example': '1'})
     faculties: list[Faculty]
 
 
 class ResponseResult(ApplicantInfo):
     """Выходные данные для API получения результата"""
-
+    uid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
     faculty_type: list[FacultyTypeSch]
 
 
@@ -52,10 +52,11 @@ class AnswerInput(SQLModel):
                                                             "0af41b33-1780-4603-ba5c-4777496fcce7"]})
 
 
-class ApplicantAnswers(ApplicantInfo):
+class ApplicantAnswers(SQLModel):
     """Ответы пользователя"""
+    uid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
     answers: list[AnswerInput] = Field(schema_extra={'example': [
         {"question_id": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad", "answer_ids": ["418ec475-5604-4789-a90f-269c879ea9ed",
-                                                                               "0af41b33-1780-4603-ba5c-4777496fcce7"]},
+                                                                                   "0af41b33-1780-4603-ba5c-4777496fcce7"]},
         {"question_id": "df2c6f0c-4d4f-4803-a573-c74c9c96f57f", "answer_ids": ["8cbbd1d1-e2b1-45b6-a210-b86018adb25b"]}
     ]})
