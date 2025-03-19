@@ -1,7 +1,7 @@
 from sqlmodel import Field, SQLModel
 
 
-class ResultInfo(SQLModel):
+class ApplicantInfo(SQLModel):
     """Входные данные для API получения результата"""
     surname: str = Field(schema_extra={'example': 'Ivanov'})
     name: str = Field(schema_extra={'example': 'Ivan'})
@@ -24,7 +24,7 @@ class FacultyTypeSch(SQLModel):
     faculties: list[Faculty]
 
 
-class ResponseResult(ResultInfo):
+class ResponseResult(ApplicantInfo):
     """Выходные данные для API получения результата"""
 
     faculty_type: list[FacultyTypeSch]
@@ -52,7 +52,7 @@ class AnswerInput(SQLModel):
                                                             "0af41b33-1780-4603-ba5c-4777496fcce7"]})
 
 
-class UserAnswers(ResultInfo):
+class ApplicantAnswers(ApplicantInfo):
     """Ответы пользователя"""
     answers: list[AnswerInput] = Field(schema_extra={'example': [
         {"question_id": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad", "answer_ids": ["418ec475-5604-4789-a90f-269c879ea9ed",

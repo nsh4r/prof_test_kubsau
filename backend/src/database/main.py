@@ -15,7 +15,7 @@ async_engine = create_async_engine(
 async def init_db() -> None:
     """"Create db tables"""
     async with async_engine.begin() as conn:
-        from backend.src.database.models import ResultFaculty,Result, Faculty,\
+        from backend.src.database.models import ApplicantFaculty,Applicant, Faculty,\
             AnswerFaculty, Answer, FacultyType, Question
         await conn.run_sync(SQLModel.metadata.create_all)
 

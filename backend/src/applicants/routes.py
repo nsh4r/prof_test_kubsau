@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from backend.src.database.main import get_session
-from backend.src.applicants.schemas import ResponseResult, UserAnswers
+from backend.src.applicants.schemas import ResponseResult, ApplicantAnswers
 from .service import ResultService, QuestionService
 
 api_router = APIRouter(prefix="/backend/api")
@@ -23,7 +23,7 @@ async def get_result_by_phone(phone_number: str, session: AsyncSession = Depends
 
 
 @api_router.post("/results/", status_code=status.HTTP_201_CREATED, response_model=ResponseResult)
-async def process_user_answers(user_data: UserAnswers, session: AsyncSession = Depends(get_session)):
+async def process_user_answers(user_data: ApplicantAnswers, session: AsyncSession = Depends(get_session)):
     """
     Process user answers and create a new result.
 

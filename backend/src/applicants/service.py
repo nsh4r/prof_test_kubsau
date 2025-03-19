@@ -1,7 +1,7 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from fastapi import HTTPException, status
-from backend.src.database.models import Result, Faculty, ResultFaculty, FacultyType, Question, Answer, AnswerFaculty
+from backend.src.database.models import Applicant, Faculty, ApplicantFaculty, FacultyType, Question, Answer, AnswerFaculty
 from backend.src.applicants.schemas import ResponseResult, FacultyTypeSch
 
 
@@ -13,18 +13,21 @@ class ResultService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_result_by_phone(self, phone_number: str):
+    async def post_result_by_phone(self, phone_number: str):
         """
         Get a result by phone number.
 
         Args:
-            phone_number (str): The phone number of the result.
+            surname (str): The surname of the applicant.
+            name (str): The name of the applicant.
+            patronymic (str): The patronymic of the applicant.
+            phone_number (str): The phone number of the applicant.
 
         Returns:
             ResponseResult: The result object.
         """
-        profile = (select(Result, ResultFaculty).join(ResultFaculty).
-                   where(Result.phone_number == phone_number))
+        profile = (select(Applicant, ApplicantFaculty).join(ApplicantFaculty).
+                   where(Applicant.phone_number == phone_number))
         result = await self.session.exec(profile)
         result = result.all()
 
@@ -47,8 +50,8 @@ class ResultService:
             if not faculties:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Faculties not found!')
 
-            faculty_type_compliance = await self.session.exec(select(ResultFaculty.compliance).
-                                                              where(ResultFaculty.faculty_type_id == i))
+            faculty_type_compliance = await self.session.exec(select(ApplicantFaculty.compliance).
+                                                              where(ApplicantFaculty.faculty_type_id == i))
             faculty_type_compliance = faculty_type_compliance.first()
 
             faculty_type_obj = FacultyTypeSch(
@@ -69,7 +72,7 @@ class ResultService:
 
     async def process_user_answers(self, user_data):
         """
-        Process user answers and create a new result.
+        Process user answers and create a new Applicant.
 
         Args:
             user_data: The user data containing answers.
@@ -77,13 +80,13 @@ class ResultService:
         Returns:
             ResponseResult: The result object.
         """
-        existing_result = await self.session.exec(select(Result).
-                                                  where(Result.phone_number == user_data.phone_number))
+        existing_result = await self.session.exec(select(Applicant).
+                                                  where(Applicant.phone_number == user_data.phone_number))
         existing_result = existing_result.first()
 
         if existing_result:
-            existing_faculties = await self.session.exec(select(ResultFaculty).
-                                                         where(ResultFaculty.result_id == existing_result.uid))
+            existing_faculties = await self.session.exec(select(ApplicantFaculty).
+                                                         where(ApplicantFaculty.result_id == existing_result.uid))
             existing_faculties = existing_faculties.all()
 
             for faculty in existing_faculties:
@@ -91,15 +94,15 @@ class ResultService:
             await self.session.delete(existing_result)
             await self.session.commit()
 
-        new_result = Result(
+        new_applicant = Applicant(
             surname=user_data.surname,
             name=user_data.name,
             patronymic=user_data.patronymic,
             phone_number=user_data.phone_number
         )
-        self.session.add(new_result)
+        self.session.add(new_applicant)
         await self.session.commit()
-        await self.session.refresh(new_result)
+        await self.session.refresh(new_applicant)
 
         faculty_scores = {}
 
@@ -133,20 +136,20 @@ class ResultService:
             )
             faculties_list.append(faculty_type_obj)
 
-            result_faculty = ResultFaculty(
-                result_id=new_result.uid,
+            applicant_faculty = ApplicantFaculty(
+                result_id=new_applicant.uid,
                 faculty_type_id=faculty_type_id,
                 compliance=score
             )
-            self.session.add(result_faculty)
+            self.session.add(applicant_faculty)
 
         await self.session.commit()
 
         return ResponseResult(
-            surname=new_result.surname,
-            name=new_result.name,
-            patronymic=new_result.patronymic,
-            phone_number=new_result.phone_number,
+            surname=new_applicant.surname,
+            name=new_applicant.name,
+            patronymic=new_applicant.patronymic,
+            phone_number=new_applicant.phone_number,
             faculty_type=faculties_list
         )
 

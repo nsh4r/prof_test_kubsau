@@ -1,9 +1,9 @@
 services:
   app:
-    image: nsh4r/backend-app:0.0.1
+    image: nsh4r/backend-app:${BE_TAG}
     restart: always
     ports:
-      - "20000:8080"
+      - "${BE_PORT}:8080"
     env_file:
       - .env
     depends_on:
@@ -15,7 +15,7 @@ services:
     image: postgres:15-alpine
     restart: always
     ports:
-      - "55432:${DB_PORT}"
+      - "${DB_PORT}:5432"
     env_file:
       - .env
     environment:

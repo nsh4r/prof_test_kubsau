@@ -4,17 +4,17 @@ from uuid import UUID, uuid4
 from datetime import datetime
 
 
-class ResultFaculty(SQLModel, table=True):
+class ApplicantFaculty(SQLModel, table=True):
     """
-    This class represents the result faculty relation in the database.
+    This class represents the applicant faculty relation in the database.
     """
-    __tablename__ = 'result_faculty'
+    __tablename__ = 'applicant_faculty'
     uid: UUID = Field(
         sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
     )
     compliance: int | None = Field(default=None)
 
-    result_id: UUID = Field(default=None, foreign_key='result.uid')
+    applicant_id: UUID = Field(default=None, foreign_key='applicant.uid')
     faculty_type_id: UUID = Field(default=None, foreign_key='faculty_type.uid')
 
 
@@ -32,11 +32,11 @@ class AnswerFaculty(SQLModel, table=True):
     faculty_type_id: UUID = Field(default=None, foreign_key='faculty_type.uid')
 
 
-class Result(SQLModel, table=True):
+class Applicant(SQLModel, table=True):
     """
-    This class represents a result in the database.
+    This class represents an applicant in the database.
     """
-    __tablename__ = 'result'
+    __tablename__ = 'applicant'
     uid: UUID = Field(
         sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
     )
