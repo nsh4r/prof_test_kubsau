@@ -1,8 +1,10 @@
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from fastapi import HTTPException, status
+from sqlalchemy.sql.expression import delete
+
 from backend.src.database.models import Applicant, Faculty, ApplicantFaculty, FacultyType, Question, Answer, AnswerFaculty
-from backend.src.applicants.schemas import ResponseResult, FacultyTypeSch
+from backend.src.applicants.schemas import ResponseResult, FacultyTypeSch, ApplicantAnswers
 
 
 class ResultService:
@@ -87,82 +89,82 @@ class ResultService:
             faculty_type=faculties_list
         )
 
-    async def process_user_answers(self, user_data):
+    from sqlmodel import select
+
+    async def process_user_answers(self, user_data: ApplicantAnswers):
         """
-        Process user answers and update results for an existing Applicant.
+        Process user answers and update test results for an existing Applicant.
 
         Args:
-            user_data: The user data containing applicant uid and answers.
+            user_data: An object containing the applicant's uid and the testing answers.
 
         Returns:
-            ResponseResult: The result object.
+            ResponseResult: The result object with applicant details and faculty type results.
         """
-        # Проверяем, существует ли пользователь с переданным uid
-        existing_applicant = await self.session.exec(select(Applicant).
-                                                     where(Applicant.uid == user_data.uid))
-        existing_applicant = existing_applicant.first()
+        # Получаем абитуриента по uid
+        applicant = await self.session.exec(select(Applicant).where(Applicant.uid == user_data.uid))
+        applicant = applicant.first()
+        if not applicant:
+            raise ValueError("Абитуриент с таким uid не найден")
 
-        if not existing_applicant:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Applicant not found!")
-
-        # Удаляем старые результаты (если они есть)
-        existing_faculties = await self.session.exec(select(ApplicantFaculty).
-                                                     where(ApplicantFaculty.applicant_id == user_data.uid))
-        existing_faculties = existing_faculties.all()
-
-        for faculty in existing_faculties:
+        # Удаляем существующие результаты тестирования для абитуриента
+        existing_faculties = await self.session.exec(
+            select(ApplicantFaculty).where(ApplicantFaculty.applicant_id == applicant.uid)
+        )
+        for faculty in existing_faculties.all():
             await self.session.delete(faculty)
-
         await self.session.commit()
 
+        # Подсчёт баллов для каждого факультета
         faculty_scores = {}
-
-        # Обрабатываем новые ответы
         for answer_data in user_data.answers:
             for answer_id in answer_data.answer_ids:
-                answer_faculties = await self.session.exec(select(AnswerFaculty).
-                                                           where(AnswerFaculty.answer_id == answer_id))
-                answer_faculties = answer_faculties.all()
-
-                for answer_faculty in answer_faculties:
-                    faculty_scores[answer_faculty.faculty_type_id] = \
-                        faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
+                answer_faculties = await self.session.exec(
+                    select(AnswerFaculty).where(AnswerFaculty.answer_id == answer_id)
+                )
+                for answer_faculty in answer_faculties.all():
+                    faculty_scores[answer_faculty.faculty_type_id] = (
+                            faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
+                    )
 
         faculties_list = []
+        # Формирование списка результатов для каждого типа факультета
         for faculty_type_id, score in faculty_scores.items():
-            faculty_type = await self.session.exec(select(FacultyType).
-                                                   where(FacultyType.uid == faculty_type_id))
-            faculty_type = faculty_type.first()
-
-            if not faculty_type:
+            faculty_type_result = await self.session.exec(
+                select(FacultyType).where(FacultyType.uid == faculty_type_id)
+            )
+            faculty_type_obj = faculty_type_result.first()
+            if not faculty_type_obj:
                 continue
 
-            faculties = await self.session.exec(select(Faculty).
-                                                where(Faculty.type_id == faculty_type_id))
-            faculties = faculties.all()
+            faculties_result = await self.session.exec(
+                select(Faculty).where(Faculty.type_id == faculty_type_id)
+            )
+            faculties = faculties_result.all()
 
-            faculty_type_obj = FacultyTypeSch(
-                name=faculty_type.name,
+            faculty_type_sch = FacultyTypeSch(
+                name=faculty_type_obj.name,
                 compliance=score,
                 faculties=faculties
             )
-            faculties_list.append(faculty_type_obj)
+            faculties_list.append(faculty_type_sch)
 
-            applicant_faculty = ApplicantFaculty(
-                applicant_id=user_data.uid,
+            # Сохранение нового результата тестирования для данного факультета
+            new_applicant_faculty = ApplicantFaculty(
+                applicant_id=applicant.uid,
                 faculty_type_id=faculty_type_id,
                 compliance=score
             )
-            self.session.add(applicant_faculty)
+            self.session.add(new_applicant_faculty)
 
         await self.session.commit()
 
         return ResponseResult(
-            uid=existing_applicant.uid,
-            surname=existing_applicant.surname,
-            name=existing_applicant.name,
-            patronymic=existing_applicant.patronymic,
-            phone_number=existing_applicant.phone_number,
+            uid=applicant.uid,  # Добавляем uid абитуриента
+            surname=applicant.surname,
+            name=applicant.name,
+            patronymic=applicant.patronymic,
+            phone_number=applicant.phone_number,
             faculty_type=faculties_list
         )
 
