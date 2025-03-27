@@ -36,6 +36,7 @@ class ResultService:
             existing_applicant.surname = user_data.surname
             existing_applicant.name = user_data.name
             existing_applicant.patronymic = user_data.patronymic
+            existing_applicant.city = user_data.city
             await self.session.commit()
             await self.session.refresh(existing_applicant)
         else:
@@ -44,7 +45,8 @@ class ResultService:
                 surname=user_data.surname,
                 name=user_data.name,
                 patronymic=user_data.patronymic,
-                phone_number=user_data.phone_number
+                phone_number=user_data.phone_number,
+                city=user_data.city
             )
             self.session.add(new_applicant)
             await self.session.commit()
@@ -53,7 +55,7 @@ class ResultService:
 
         # Получаем связанные результаты
         applicant_faculties = await self.session.exec(select(ApplicantFaculty).where(
-            ApplicantFaculty.applicant_id == existing_applicant.uid
+            ApplicantFaculty.applicant_id == existing_applicant.uuid
         ))
         applicant_faculties = applicant_faculties.all()
 
@@ -61,7 +63,7 @@ class ResultService:
 
         for app_faculty in applicant_faculties:
             faculty_type = await self.session.exec(select(FacultyType).where(
-                FacultyType.uid == app_faculty.faculty_type_id
+                FacultyType.uuid == app_faculty.faculty_type_id
             ))
             faculty_type = faculty_type.first()
 
@@ -69,7 +71,7 @@ class ResultService:
                 continue
 
             faculties = await self.session.exec(select(Faculty).where(
-                Faculty.type_id == faculty_type.uid
+                Faculty.type_id == faculty_type.uuid
             ))
             faculties = faculties.all()
 
@@ -81,10 +83,11 @@ class ResultService:
             faculties_list.append(faculty_type_obj)
 
         return ResponseResult(
-            uid=existing_applicant.uid,
+            uuid=existing_applicant.uuid,
             surname=existing_applicant.surname,
             name=existing_applicant.name,
             patronymic=existing_applicant.patronymic,
+            city=existing_applicant.city,
             phone_number=existing_applicant.phone_number,
             faculty_type=faculties_list
         )
@@ -96,20 +99,20 @@ class ResultService:
         Process user answers and update test results for an existing Applicant.
 
         Args:
-            user_data: An object containing the applicant's uid and the testing answers.
+            user_data: An object containing the applicant's uuid and the testing answers.
 
         Returns:
             ResponseResult: The result object with applicant details and faculty type results.
         """
-        # Получаем абитуриента по uid
-        applicant = await self.session.exec(select(Applicant).where(Applicant.uid == user_data.uid))
+        # Получаем абитуриента по uuid
+        applicant = await self.session.exec(select(Applicant).where(Applicant.uuid == user_data.uuid))
         applicant = applicant.first()
         if not applicant:
-            raise ValueError("Абитуриент с таким uid не найден")
+            raise ValueError("Абитуриент с таким uuid не найден")
 
         # Удаляем существующие результаты тестирования для абитуриента
         existing_faculties = await self.session.exec(
-            select(ApplicantFaculty).where(ApplicantFaculty.applicant_id == applicant.uid)
+            select(ApplicantFaculty).where(ApplicantFaculty.applicant_id == applicant.uuid)
         )
         for faculty in existing_faculties.all():
             await self.session.delete(faculty)
@@ -131,7 +134,7 @@ class ResultService:
         # Формирование списка результатов для каждого типа факультета
         for faculty_type_id, score in faculty_scores.items():
             faculty_type_result = await self.session.exec(
-                select(FacultyType).where(FacultyType.uid == faculty_type_id)
+                select(FacultyType).where(FacultyType.uuid == faculty_type_id)
             )
             faculty_type_obj = faculty_type_result.first()
             if not faculty_type_obj:
@@ -151,7 +154,7 @@ class ResultService:
 
             # Сохранение нового результата тестирования для данного факультета
             new_applicant_faculty = ApplicantFaculty(
-                applicant_id=applicant.uid,
+                applicant_id=applicant.uuid,
                 faculty_type_id=faculty_type_id,
                 compliance=score
             )
@@ -160,10 +163,11 @@ class ResultService:
         await self.session.commit()
 
         return ResponseResult(
-            uid=applicant.uid,  # Добавляем uid абитуриента
+            uuid=applicant.uuid,  # Добавляем uuid абитуриента
             surname=applicant.surname,
             name=applicant.name,
             patronymic=applicant.patronymic,
+            city=applicant.city,
             phone_number=applicant.phone_number,
             faculty_type=faculties_list
         )
@@ -187,7 +191,7 @@ class QuestionService:
         questions_dict = {}
 
         questions_query = (select(Question, Answer).join(Answer).
-                           where(Question.uid == Answer.question_id))
+                           where(Question.uuid == Answer.question_id))
         question_res_query = await self.session.exec(questions_query)
         question_res_query = question_res_query.all()
 
@@ -195,13 +199,13 @@ class QuestionService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
 
         for question, answer in question_res_query:
-            if question.uid not in questions_dict:
-                questions_dict[question.uid] = {
-                    "id": question.uid,
+            if question.uuid not in questions_dict:
+                questions_dict[question.uuid] = {
+                    "id": question.uuid,
                     "question": question.text,
                     "answers": [],
                 }
-            questions_dict[question.uid]["answers"].append(answer)
+            questions_dict[question.uuid]["answers"].append(answer)
 
         return [
             {"id": q["id"], "question": q["question"], "answers": q["answers"]}

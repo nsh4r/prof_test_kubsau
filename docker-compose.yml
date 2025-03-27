@@ -1,7 +1,7 @@
 services:
   app:
     image: nsh4r/backend-app:${BE_TAG}
-    restart: always
+    restart: unless-stopped
     ports:
       - "${BE_PORT}:8080"
     env_file:
@@ -13,7 +13,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
-    restart: always
+    restart: unless-stopped
     ports:
       - "${DB_PORT}:5432"
     env_file:
@@ -22,5 +22,26 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
-#    volumes:
-#      - postgres_data:/var/lib/postgresql/data
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+     - .:/var/lib/postgresql/data
+
+  pgadmin:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:9.1.0
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+    - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - ${PGADMIN_PORT}:9080
+
+volumes:
+  pgadmin_data:

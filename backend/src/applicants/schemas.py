@@ -7,6 +7,7 @@ class ApplicantInfo(SQLModel):
     name: str = Field(schema_extra={'example': 'Ivan'})
     patronymic: str | None = Field(default=None, schema_extra={'example': 'Ivanovich'})
     phone_number: str = Field(schema_extra={'example': '79000000000'}, max_length=11, regex=r'^79\d{9}$')
+    city: str = Field(default=None, schema_extra={'example': 'Krasnodar'})
 
 
 class Faculty(SQLModel):
@@ -26,7 +27,7 @@ class FacultyTypeSch(SQLModel):
 
 class ResponseResult(ApplicantInfo):
     """Выходные данные для API получения результата"""
-    uid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
+    uuid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
     faculty_type: list[FacultyTypeSch]
 
 
@@ -54,7 +55,7 @@ class AnswerInput(SQLModel):
 
 class ApplicantAnswers(SQLModel):
     """Ответы пользователя"""
-    uid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
+    uuid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})
     answers: list[AnswerInput] = Field(schema_extra={'example': [
         {"question_id": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad", "answer_ids": ["418ec475-5604-4789-a90f-269c879ea9ed",
                                                                                    "0af41b33-1780-4603-ba5c-4777496fcce7"]},
