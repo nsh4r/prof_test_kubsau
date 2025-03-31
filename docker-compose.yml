@@ -1,5 +1,5 @@
 services:
-  app:
+  backend-app:
     image: nsh4r/backend-app:${BE_TAG}
     restart: unless-stopped
     ports:
@@ -10,6 +10,19 @@ services:
       - postgres
     volumes:
       - .:/opt/app
+
+  frontend-app:
+    image: nsh4r/frontend-app:${FE_TAG}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_END: production
+    ports:
+      - "${FE_PORT}:5173"
+    depends_on:
+      - backend-app
+
 
   postgres:
     image: postgres:15-alpine
@@ -38,10 +51,11 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
       PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_LISTEN_PORT: 9080  # Добавьте это
     volumes:
-    - pgadmin_data:/var/lib/pgadmin
+      - pgadmin_data:/var/lib/pgadmin
     ports:
-      - ${PGADMIN_PORT}:9080
+      - "${PGADMIN_PORT}:9080"
 
 volumes:
   pgadmin_data:
