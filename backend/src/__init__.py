@@ -20,7 +20,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = ["*","http://localhost:5173", "http://4.159.250.22:20000"]
+origins = ["*","http://localhost:5173", "http://45.159.250.22:20000", "http://45.159.250.22:30000"]
 
 app.add_middleware(
     CORSMiddleware,
