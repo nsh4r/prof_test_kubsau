@@ -20,7 +20,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-origins = ["*","http://localhost:5173", "http://45.159.250.22:20000", "http://45.159.250.22:30000"]
+origins = ["*", "http://45.159.250.22:20000", "http://45.159.250.22:30000", "http://frontend-app:30000,"
+                                                                            " http://localhost:30000"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,6 +30,5 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 app.include_router(api_router)
