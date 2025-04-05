@@ -1,0 +1,10 @@
+frontend
+.github
+pgdata
+.idea
+backend/src/tests
+pytest.ini
+README.md
+Dockerfile
+.gitignore
+docker-compose.yml
