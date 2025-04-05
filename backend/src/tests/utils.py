@@ -1,12 +1,23 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from typing import Final
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from backend.src.config import settings
-
-async_engine = create_async_engine(settings.postgres_url)
-async_session = sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
-
+from backend.src.database.main import async_engine
 
 class TestConstants:
     """Test constants"""
-    PHONE: str = '79000000000'
-    UUID: str = 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'
+    PHONE: Final[str] = '79000000000'
+    NAME: Final[str] = 'Ivan'
+    SURNAME: Final[str] = 'Ivanov'
+    PATRONYMIC: Final[str] = 'Ivanovich'
+    CITY: Final[str] = 'Moscow'
+
+# Async test session
+async_session = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+async def get_test_session() -> AsyncSession:
+    async with async_session() as session:
+        yield session
