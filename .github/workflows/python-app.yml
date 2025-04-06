@@ -14,7 +14,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres_test  # Тестовая БД
+          POSTGRES_DB: postgres_test
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
@@ -36,7 +36,7 @@ jobs:
       env:
         DB_HOST: localhost
         DB_PORT: 5432
-        DB_USER: postgres
+        DB_USER: postgres  # Используем того же пользователя, что и в сервисе
         DB_PASSWORD: postgres
         DB_NAME: postgres  # Основная БД (но тесты будут использовать _test)
       run: |

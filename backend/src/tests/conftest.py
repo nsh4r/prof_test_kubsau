@@ -9,7 +9,7 @@ from backend.src.config import settings
 
 @pytest.fixture(scope="session")
 async def engine():
-    # Используем тестовую БД с суффиксом _test
+    # Используем тестовую БД с тем же пользователем, что и в основном приложении
     test_db_url = settings.postgres_url.replace(
         f"/{settings.DB_NAME}",
         f"/{settings.DB_NAME}_test"
