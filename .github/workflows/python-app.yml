@@ -10,7 +10,7 @@ jobs:
   build:
     services:
       postgres:
-        image: postgres:13
+        image: postgres:15-alpine
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -38,6 +38,6 @@ jobs:
         DB_PORT: 5432
         DB_USER: postgres
         DB_PASSWORD: postgres
-        DB_NAME: postgres_test
+        DB_NAME: postgres
       run: |
         poetry run pytest -v
