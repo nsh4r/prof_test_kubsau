@@ -36,8 +36,8 @@ jobs:
       env:
         DB_HOST: localhost
         DB_PORT: 5432
-        DB_USER: postgres  # Используем того же пользователя, что и в сервисе
+        DB_USER: postgres
         DB_PASSWORD: postgres
-        DB_NAME: postgres  # Основная БД (но тесты будут использовать _test)
+        DB_NAME: postgres_test
       run: |
         poetry run pytest -v
