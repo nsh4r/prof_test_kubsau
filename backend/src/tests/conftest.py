@@ -5,25 +5,26 @@ from sqlmodel import SQLModel
 from fastapi.testclient import TestClient
 from backend.src.__init__ import app
 from backend.src.config import settings
+import os
 
 
 @pytest.fixture(scope="session")
 async def engine():
-    # Используем тестовую БД с тем же пользователем, что и в основном приложении
-    test_db_url = settings.postgres_url.replace(
-        f"/{settings.DB_NAME}",
-        f"/{settings.DB_NAME}_test"
+    # Используем тестовую БД
+    engine = create_async_engine(
+        settings.test_postgres_url,
+        echo=True,
+        pool_size=10,
+        max_overflow=20
     )
 
-    engine = create_async_engine(test_db_url, echo=True)
-
-    # Создаем тестовую БД (если еще не существует)
+    # Создаем таблицы
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
     yield engine
 
-    # Очищаем после всех тестов
+    # Очищаем
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
 
@@ -37,7 +38,7 @@ async def session(engine):
     )
     async with async_session() as session:
         yield session
-        await session.rollback()  # Откатываем несохраненные изменения
+        await session.rollback()
 
 
 @pytest.fixture
