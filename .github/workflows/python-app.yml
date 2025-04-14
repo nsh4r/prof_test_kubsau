@@ -19,8 +19,8 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_USER: ${{ vars.POSTGRES_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_USER: ${{vars.POSTGRES_USERNAME}}
+          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
         ports:
           - 5432:5432
         options: >-
@@ -79,3 +79,5 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ env.REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
           docker push backend-app:${{ env.IMAGE_VERSION }}
+#
+
