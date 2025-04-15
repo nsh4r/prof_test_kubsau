@@ -14,15 +14,15 @@ class AsyncSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
     @classmethod
     async def _create(cls, model_class, *args, **kwargs):
         session = cls._meta.sqlalchemy_session
-        async with session.begin():
-            instance = model_class(*args, **kwargs)
-            session.add(instance)
-            await session.commit()
+        instance = model_class(*args, **kwargs)
+        session.add(instance)
+        await session.commit()
+        await session.refresh(instance)
         return instance
 
     @classmethod
     async def create(cls, **kwargs):
-        return await cls._generate(enums.CREATE_STRATEGY, kwargs)
+        return await cls._create(cls._meta.model, **kwargs)
 
 
 class ApplicantFactory(AsyncSQLAlchemyModelFactory):

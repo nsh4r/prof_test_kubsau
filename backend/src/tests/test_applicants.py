@@ -13,26 +13,6 @@ from backend.src.tests.factories import (
 from backend.src.tests.utils import TestConstants
 
 
-@pytest.fixture
-async def db_session():
-    from backend.src.database.main import async_engine
-    from sqlalchemy.ext.asyncio import AsyncSession
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-
-    async_session = sessionmaker(
-        bind=async_engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with async_session() as session:
-        yield session
-        await session.rollback()
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.drop_all)
-
-
 @pytest.fixture(autouse=True)
 async def setup_factories(db_session):
     """Configure factories to use the test session"""

@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
-from backend.src.database.main import async_engine
 from backend.src.config import settings
 
 
@@ -17,7 +16,18 @@ class TestConstants:
 
 
 @pytest.fixture
-async def db_session():
+async def async_engine():
+    engine = create_async_engine(
+        settings.postgres_url.replace("postgresql+asyncpg", "postgresql+asyncpg"),
+        echo=True,
+        future=True
+    )
+    yield engine
+    await engine.dispose()
+
+
+@pytest.fixture
+async def db_session(async_engine):
     # Create all tables
     async with async_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
