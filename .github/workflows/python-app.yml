@@ -60,7 +60,7 @@ jobs:
         env:
           DB_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
         run: |
-          poetry run pytest -v
+          poetry run pytest -v --asyncio-mode=auto
 
       - name: Build + Tag Image.
         run: docker build -t backend-app:${{ env.IMAGE_VERSION }} -f Dockerfile.app .

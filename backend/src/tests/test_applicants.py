@@ -13,22 +13,28 @@ from backend.src.tests.factories import (
 from backend.src.tests.utils import TestConstants
 
 
-@pytest.fixture(scope="function")
-def db_session_factory():
-    """Fixture to provide session for factories"""
+@pytest.fixture
+async def db_session():
     from backend.src.database.main import async_engine
-    from sqlalchemy.orm import sessionmaker
+    from sqlalchemy.ext.asyncio import AsyncSession
 
-    sync_engine = async_engine.sync_engine
-    Session = sessionmaker(bind=sync_engine)
-    session = Session()
-    yield session
-    session.rollback()
-    session.close()
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+    async_session = sessionmaker(
+        bind=async_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
+    async with async_session() as session:
+        yield session
+        await session.rollback()
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
 
 
 @pytest.fixture(autouse=True)
-def setup_factories(db_session_factory):
+async def setup_factories(db_session):
     """Configure factories to use the test session"""
     from backend.src.tests import factories
     for factory in [
@@ -40,14 +46,14 @@ def setup_factories(db_session_factory):
         factories.ApplicantFacultyFactory,
         factories.AnswerFacultyFactory,
     ]:
-        factory._meta.sqlalchemy_session = db_session_factory
+        factory._meta.sqlalchemy_session = db_session
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_new_applicant(db_session_factory):
+async def test_post_result_by_data_new_applicant(db_session):
     # Create test data
-    faculty_type = FacultyTypeFactory()
-    faculty = FacultyFactory(type_id=faculty_type.uuid)
+    faculty_type = await FacultyTypeFactory.create()
+    faculty = await FacultyFactory.create(type_id=faculty_type.uuid)
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         applicant_data = ApplicantInfo(
@@ -70,9 +76,9 @@ async def test_post_result_by_data_new_applicant(db_session_factory):
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_existing_applicant(db_session_factory):
+async def test_post_result_by_data_existing_applicant(db_session):
     # Create existing applicant
-    existing_applicant = ApplicantFactory()
+    existing_applicant = await ApplicantFactory.create()
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         updated_name = "UpdatedName"
@@ -94,26 +100,26 @@ async def test_post_result_by_data_existing_applicant(db_session_factory):
 
 
 @pytest.mark.asyncio
-async def test_process_user_answers(db_session_factory):
+async def test_process_user_answers(db_session):
     # Create test data
-    applicant = ApplicantFactory()
-    question = QuestionFactory()
-    answer1 = AnswerFactory(question_id=question.uuid)
-    answer2 = AnswerFactory(question_id=question.uuid)
-    faculty_type1 = FacultyTypeFactory()
-    faculty_type2 = FacultyTypeFactory()
-    AnswerFacultyFactory(
+    applicant = await ApplicantFactory.create()
+    question = await QuestionFactory.create()
+    answer1 = await AnswerFactory.create(question_id=question.uuid)
+    answer2 = await AnswerFactory.create(question_id=question.uuid)
+    faculty_type1 = await FacultyTypeFactory.create()
+    faculty_type2 = await FacultyTypeFactory.create()
+    await AnswerFacultyFactory.create(
         answer_id=answer1.uuid,
         faculty_type_id=faculty_type1.uuid,
         score=3
     )
-    AnswerFacultyFactory(
+    await AnswerFacultyFactory.create(
         answer_id=answer2.uuid,
         faculty_type_id=faculty_type2.uuid,
         score=5
     )
-    FacultyFactory(type_id=faculty_type1.uuid)
-    FacultyFactory(type_id=faculty_type2.uuid)
+    await FacultyFactory.create(type_id=faculty_type1.uuid)
+    await FacultyFactory.create(type_id=faculty_type2.uuid)
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         answers_data = ApplicantAnswers(
@@ -135,13 +141,13 @@ async def test_process_user_answers(db_session_factory):
 
 
 @pytest.mark.asyncio
-async def test_get_all_questions(db_session_factory):
+async def test_get_all_questions(db_session):
     # Create test data
-    question1 = QuestionFactory()
-    question2 = QuestionFactory()
-    AnswerFactory(question_id=question1.uuid)
-    AnswerFactory(question_id=question1.uuid)
-    AnswerFactory(question_id=question2.uuid)
+    question1 = await QuestionFactory.create()
+    question2 = await QuestionFactory.create()
+    await AnswerFactory.create(question_id=question1.uuid)
+    await AnswerFactory.create(question_id=question1.uuid)
+    await AnswerFactory.create(question_id=question2.uuid)
 
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.get("/backend/api/questions/")

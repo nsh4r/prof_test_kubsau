@@ -10,13 +10,22 @@ from backend.src.database.models import (
 from backend.src.tests.utils import TestConstants
 
 
-class BaseFactory(factory.alchemy.SQLAlchemyModelFactory):
-    class Meta:
-        abstract = True
-        sqlalchemy_session_persistence = "commit"
+class AsyncSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
+    @classmethod
+    async def _create(cls, model_class, *args, **kwargs):
+        session = cls._meta.sqlalchemy_session
+        async with session.begin():
+            instance = model_class(*args, **kwargs)
+            session.add(instance)
+            await session.commit()
+        return instance
+
+    @classmethod
+    async def create(cls, **kwargs):
+        return await cls._generate(enums.CREATE_STRATEGY, kwargs)
 
 
-class ApplicantFactory(BaseFactory):
+class ApplicantFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = Applicant
 
@@ -29,7 +38,7 @@ class ApplicantFactory(BaseFactory):
     dt_created = factory.LazyFunction(datetime.now)
 
 
-class FacultyTypeFactory(BaseFactory):
+class FacultyTypeFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = FacultyType
 
@@ -37,7 +46,7 @@ class FacultyTypeFactory(BaseFactory):
     name = factory.Faker('word')
 
 
-class FacultyFactory(BaseFactory):
+class FacultyFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = Faculty
 
@@ -47,7 +56,7 @@ class FacultyFactory(BaseFactory):
     type_id = factory.LazyAttribute(lambda o: uuid.uuid4())
 
 
-class QuestionFactory(BaseFactory):
+class QuestionFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = Question
 
@@ -55,7 +64,7 @@ class QuestionFactory(BaseFactory):
     text = factory.Faker('sentence')
 
 
-class AnswerFactory(BaseFactory):
+class AnswerFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = Answer
 
@@ -64,7 +73,7 @@ class AnswerFactory(BaseFactory):
     question_id = factory.LazyAttribute(lambda o: uuid.uuid4())
 
 
-class ApplicantFacultyFactory(BaseFactory):
+class ApplicantFacultyFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = ApplicantFaculty
 
@@ -74,7 +83,7 @@ class ApplicantFacultyFactory(BaseFactory):
     faculty_type_id = factory.LazyAttribute(lambda o: uuid.uuid4())
 
 
-class AnswerFacultyFactory(BaseFactory):
+class AnswerFacultyFactory(AsyncSQLAlchemyModelFactory):
     class Meta:
         model = AnswerFaculty
 
