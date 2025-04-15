@@ -5,6 +5,7 @@ from sqlmodel import select
 
 from backend.src.__init__ import app
 from backend.src.applicants.schemas import ResponseResult, ApplicantInfo, ApplicantAnswers
+from backend.src.database.models import Applicant, FacultyType, Faculty, Question, Answer
 from backend.src.tests.factories import (
     ApplicantFactory, FacultyTypeFactory, FacultyFactory,
     QuestionFactory, AnswerFactory, AnswerFacultyFactory
@@ -12,17 +13,39 @@ from backend.src.tests.factories import (
 from backend.src.tests.utils import TestConstants
 
 
+@pytest.fixture(scope="function")
+def db_session_factory():
+    """Fixture to provide session for factories"""
+    from backend.src.database.main import async_engine
+    from sqlalchemy.orm import sessionmaker
+
+    sync_engine = async_engine.sync_engine
+    Session = sessionmaker(bind=sync_engine)
+    session = Session()
+    yield session
+    session.rollback()
+    session.close()
+
+
 @pytest.fixture(autouse=True)
-def setup_db(db_session):
-    """Setup database for each test"""
-    # This will use the synchronous factories to create test data
-    # but works with async tests because the data is committed to the DB
-    pass
+def setup_factories(db_session_factory):
+    """Configure factories to use the test session"""
+    from backend.src.tests import factories
+    for factory in [
+        factories.ApplicantFactory,
+        factories.FacultyTypeFactory,
+        factories.FacultyFactory,
+        factories.QuestionFactory,
+        factories.AnswerFactory,
+        factories.ApplicantFacultyFactory,
+        factories.AnswerFacultyFactory,
+    ]:
+        factory._meta.sqlalchemy_session = db_session_factory
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_new_applicant(db_session):
-    # Create test data using synchronous factories
+async def test_post_result_by_data_new_applicant(db_session_factory):
+    # Create test data
     faculty_type = FacultyTypeFactory()
     faculty = FacultyFactory(type_id=faculty_type.uuid)
 
@@ -47,8 +70,8 @@ async def test_post_result_by_data_new_applicant(db_session):
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_existing_applicant(db_session):
-    # Create existing applicant using synchronous factory
+async def test_post_result_by_data_existing_applicant(db_session_factory):
+    # Create existing applicant
     existing_applicant = ApplicantFactory()
 
     async with AsyncClient(app=app, base_url="http://test") as client:
@@ -71,8 +94,8 @@ async def test_post_result_by_data_existing_applicant(db_session):
 
 
 @pytest.mark.asyncio
-async def test_process_user_answers(db_session):
-    # Create test data using synchronous factories
+async def test_process_user_answers(db_session_factory):
+    # Create test data
     applicant = ApplicantFactory()
     question = QuestionFactory()
     answer1 = AnswerFactory(question_id=question.uuid)
@@ -112,8 +135,8 @@ async def test_process_user_answers(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_all_questions(db_session):
-    # Create test data using synchronous factories
+async def test_get_all_questions(db_session_factory):
+    # Create test data
     question1 = QuestionFactory()
     question2 = QuestionFactory()
     AnswerFactory(question_id=question1.uuid)
