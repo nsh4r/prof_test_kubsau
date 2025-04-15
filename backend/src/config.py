@@ -15,11 +15,6 @@ class Settings(BaseSettings):
         safe_password = quote_plus(self.DB_PASSWORD)
         return f'postgresql+asyncpg://{self.DB_USER}:{safe_password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}'
 
-    @property
-    def test_postgres_url(self):
-        safe_password = quote_plus(self.DB_PASSWORD)
-        return f'postgresql+asyncpg://{self.DB_USER}:{safe_password}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}_test'
-
     model_config = SettingsConfigDict(
         env_file='.env',
         env_file_encoding='utf-8',

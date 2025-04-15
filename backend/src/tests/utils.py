@@ -1,23 +1,35 @@
-from typing import Final
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+import pytest
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
+
 from backend.src.database.main import async_engine
+from backend.src.config import settings
+
 
 class TestConstants:
     """Test constants"""
-    PHONE: Final[str] = '79000000000'
-    NAME: Final[str] = 'Ivan'
-    SURNAME: Final[str] = 'Ivanov'
-    PATRONYMIC: Final[str] = 'Ivanovich'
-    CITY: Final[str] = 'Moscow'
+    PHONE: str = '79000000000'
+    NAME: str = 'Ivan'
+    SURNAME: str = 'Ivanov'
+    PATRONYMIC: str = 'Ivanovich'
+    CITY: str = 'Krasnodar'
 
-# Async test session
-async_session = sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
 
-async def get_test_session() -> AsyncSession:
+@pytest.fixture
+async def db_session():
+    # Create all tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+
+    async_session = sessionmaker(
+        bind=async_engine, class_=AsyncSession, expire_on_commit=False
+    )
+
     async with async_session() as session:
         yield session
+        await session.rollback()
+
+    # Drop all tables after tests
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.drop_all)
