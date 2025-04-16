@@ -19,9 +19,9 @@ jobs:
       postgres:
         image: postgres
         env:
-          POSTGRES_USER: ${{vars.POSTGRES_USERNAME}}
-          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
-          POSTGRES_DB: ${{vars.POSTGRES_DB_TEST}}
+          DB_USER: ${{vars.DB_USER}}
+          DB_PASSWORD: ${{secrets.DB_PASSWORD}}
+          DB_NAME: ${{vars.DB_NAME}}
         ports:
           - 5432:5432
         options: >-
@@ -58,12 +58,12 @@ jobs:
 
       - name: Run Unit Tests
         env:
-          DATABASE_URL: "postgresql://${{vars.POSTGRES_USERNAME}}:${{secrets.POSTGRES_PASSWORD}}@localhost:5432/${{vars.POSTGRES_DB_TEST}}"
-          DB_USER: ${{vars.POSTGRES_USERNAME}}
-          DB_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+          DATABASE_URL: "postgresql://${{vars.DB_USER}}:${{secrets.DB_PASSWORD}}@localhost:5432/${{vars.DB_NAME}}"
+          DB_USER: ${{vars.DB_USER}}
+          DB_PASSWORD: ${{secrets.DB_PASSWORD}}
           DB_HOST: localhost
           DB_PORT: "5432"
-          DB_NAME: ${{vars.POSTGRES_DB_TEST}}
+          DB_NAME: ${{vars.DB_NAME}}
         run: |
           poetry run pytest -v --asyncio-mode=auto
 
