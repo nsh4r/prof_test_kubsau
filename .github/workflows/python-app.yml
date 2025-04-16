@@ -56,6 +56,17 @@ jobs:
 #      - name: Run Database Migrations.
 #        run: python3 manage.py migrate
 
+      - name: Run Backend
+        env:
+          DB_USER: ${{vars.DB_USER}}
+          DB_PASSWORD: ${{secrets.DB_PASSWORD}}
+          DB_HOST: localhost
+          DB_PORT: "5432"
+          DB_NAME: ${{vars.DB_NAME}}
+        run:
+          poetry run uvicorn backend.src:app --host localhost --port 8080
+          
+
       - name: Run Unit Tests
         env:
           DATABASE_URL: "postgresql://${{vars.DB_USER}}:${{secrets.DB_PASSWORD}}@localhost:5432/${{vars.DB_NAME}}"
@@ -65,7 +76,7 @@ jobs:
           DB_PORT: "5432"
           DB_NAME: ${{vars.DB_NAME}}
         run: |
-          poetry run pytest -v --asyncio-mode=auto
+          poetry run pytest --asyncio-mode=auto
 
       - name: Build + Tag Image.
         run: docker build -t backend-app:${{ env.IMAGE_VERSION }} -f Dockerfile.app .
