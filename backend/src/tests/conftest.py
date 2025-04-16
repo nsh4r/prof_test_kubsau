@@ -38,5 +38,5 @@ async def client():
     """
     Фикстура для создания клиента HTTP для тестов.
     """
-    async with AsyncClient(app=app, base_url=settings.postgres_url) as client:
+    async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
