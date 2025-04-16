@@ -78,4 +78,4 @@ jobs:
         with:
          context:
          push: true
-         tags: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ github.ref }}
+         tags: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.GIT_COMMIT_SHA }}"
