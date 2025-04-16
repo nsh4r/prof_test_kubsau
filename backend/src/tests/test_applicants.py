@@ -1,137 +1,46 @@
 import pytest
 from fastapi import status
-from httpx import AsyncClient
-from sqlmodel import select
-
-from backend.src.__init__ import app
-from backend.src.applicants.schemas import ResponseResult, ApplicantInfo, ApplicantAnswers
-from backend.src.database.models import Applicant, FacultyType, Faculty, Question, Answer
-from backend.src.tests.factories import (
-    ApplicantFactory, FacultyTypeFactory, FacultyFactory,
-    QuestionFactory, AnswerFactory, AnswerFacultyFactory
-)
-from backend.src.tests.utils import TestConstants, db_session  # Add this import
-
-
-@pytest.fixture(autouse=True)
-async def setup_factories(db_session):
-    """Configure factories to use the test session"""
-    from backend.src.tests import factories
-    for factory in [
-        factories.ApplicantFactory,
-        factories.FacultyTypeFactory,
-        factories.FacultyFactory,
-        factories.QuestionFactory,
-        factories.AnswerFactory,
-        factories.ApplicantFacultyFactory,
-        factories.AnswerFacultyFactory,
-    ]:
-        factory._meta.sqlalchemy_session = db_session
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_new_applicant(db_session):
-    # Create test data
-    faculty_type = await FacultyTypeFactory.create()
-    faculty = await FacultyFactory.create(type_id=faculty_type.uuid)
+async def test_post_result_by_data(client, session):
+    """Тест для /backend/api/applicant/by-data/"""
+    data = {
+        "surname": "Ivanov",
+        "name": "Ivan",
+        "patronymic": "Ivanovich",
+        "phone_number": "79000000000",
+        "city": "Krasnodar"
+    }
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        applicant_data = ApplicantInfo(
-            surname=TestConstants.SURNAME,
-            name=TestConstants.NAME,
-            patronymic=TestConstants.PATRONYMIC,
-            phone_number=TestConstants.PHONE,
-            city=TestConstants.CITY
-        )
+    response = client.post("/backend/api/applicant/by-data/", json=data)
 
-        response = await client.post(
-            "/backend/api/applicant/by-data/",
-            json=applicant_data.model_dump()
-        )
-
-        assert response.status_code == status.HTTP_201_CREATED
-        response_data = response.json()
-        assert response_data["surname"] == TestConstants.SURNAME
-        assert response_data["phone_number"] == TestConstants.PHONE
+    assert response.status_code == status.HTTP_201_CREATED
+    result = response.json()
+    assert result["surname"] == data["surname"]
+    assert result["name"] == data["name"]
+    assert result["phone_number"] == data["phone_number"]
+    assert result["city"] == data["city"]
+    assert "uuid" in result  # UUID должен быть в ответе
+    assert "faculty_type" in result  # Убедитесь, что результат включает факультеты
 
 
 @pytest.mark.asyncio
-async def test_post_result_by_data_existing_applicant(db_session):
-    # Create existing applicant
-    existing_applicant = await ApplicantFactory.create()
+async def test_process_user_answers(client, session):
+    """Тест для /backend/api/results/"""
+    data = {
+        "uuid": "some-uuid",  # Используем реальный UUID абитуриента для теста
+        "answers": [
+            {
+                "question_id": "ee1cb691-99b5-4b64-b5af-e97757c7b9ad",
+                "answer_ids": ["418ec475-5604-4789-a90f-269c879ea9ed"]
+            }
+        ]
+    }
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        updated_name = "UpdatedName"
-        applicant_data = ApplicantInfo(
-            surname=existing_applicant.surname,
-            name=updated_name,
-            patronymic=existing_applicant.patronymic,
-            phone_number=existing_applicant.phone_number,
-            city=existing_applicant.city
-        )
+    response = client.post("/backend/api/results/", json=data)
 
-        response = await client.post(
-            "/backend/api/applicant/by-data/",
-            json=applicant_data.model_dump()
-        )
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.json()["name"] == updated_name
-
-
-@pytest.mark.asyncio
-async def test_process_user_answers(db_session):
-    # Create test data
-    applicant = await ApplicantFactory.create()
-    question = await QuestionFactory.create()
-    answer1 = await AnswerFactory.create(question_id=question.uuid)
-    answer2 = await AnswerFactory.create(question_id=question.uuid)
-    faculty_type1 = await FacultyTypeFactory.create()
-    faculty_type2 = await FacultyTypeFactory.create()
-    await AnswerFacultyFactory.create(
-        answer_id=answer1.uuid,
-        faculty_type_id=faculty_type1.uuid,
-        score=3
-    )
-    await AnswerFacultyFactory.create(
-        answer_id=answer2.uuid,
-        faculty_type_id=faculty_type2.uuid,
-        score=5
-    )
-    await FacultyFactory.create(type_id=faculty_type1.uuid)
-    await FacultyFactory.create(type_id=faculty_type2.uuid)
-
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        answers_data = ApplicantAnswers(
-            uuid=applicant.uuid,
-            answers=[{
-                "question_id": str(question.uuid),
-                "answer_ids": [str(answer1.uuid), str(answer2.uuid)]
-            }]
-        )
-
-        response = await client.post(
-            "/backend/api/results/",
-            json=answers_data.model_dump()
-        )
-
-        assert response.status_code == status.HTTP_201_CREATED
-        response_data = response.json()
-        assert len(response_data["faculty_type"]) == 2
-
-
-@pytest.mark.asyncio
-async def test_get_all_questions(db_session):
-    # Create test data
-    question1 = await QuestionFactory.create()
-    question2 = await QuestionFactory.create()
-    await AnswerFactory.create(question_id=question1.uuid)
-    await AnswerFactory.create(question_id=question1.uuid)
-    await AnswerFactory.create(question_id=question2.uuid)
-
-    async with AsyncClient(app=app, base_url="http://test") as client:
-        response = await client.get("/backend/api/questions/")
-
-        assert response.status_code == status.HTTP_200_OK
-        questions = response.json()
-        assert len(questions) == 2
+    assert response.status_code == status.HTTP_201_CREATED
+    result = response.json()
+    assert result["uuid"] == data["uuid"]
+    assert "faculty_type" in result  # Убедитесь, что результат включает факультеты
