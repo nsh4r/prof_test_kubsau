@@ -16,7 +16,7 @@ async def override_get_session():
     async with TestSessionLocal() as session:
         yield session
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 async def prepare_database():
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
