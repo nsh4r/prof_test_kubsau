@@ -1,7 +1,9 @@
 import pytest
 from httpx import AsyncClient
 from sqlmodel import SQLModel
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from backend.src.database.main import get_session
 from backend.src.__init__ import app
 from backend.src.config import settings
@@ -25,9 +27,9 @@ async def prepare_database():
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
 
-app.dependency_overrides[get_session] = override_get_session
-
 @pytest.fixture()
 async def client():
+    app.dependency_overrides[get_session] = override_get_session
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
+    app.dependency_overrides.clear()
