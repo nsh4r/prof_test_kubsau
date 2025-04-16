@@ -18,7 +18,7 @@ class TestConstants:
 @pytest.fixture
 async def async_engine():
     engine = create_async_engine(
-        settings.postgres_url.replace("postgresql+asyncpg", "postgresql+asyncpg"),
+        settings.postgres_url,
         echo=True,
         future=True
     )

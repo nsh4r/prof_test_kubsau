@@ -10,7 +10,7 @@ from backend.src.tests.factories import (
     ApplicantFactory, FacultyTypeFactory, FacultyFactory,
     QuestionFactory, AnswerFactory, AnswerFacultyFactory
 )
-from backend.src.tests.utils import TestConstants
+from backend.src.tests.utils import TestConstants, db_session  # Add this import
 
 
 @pytest.fixture(autouse=True)
