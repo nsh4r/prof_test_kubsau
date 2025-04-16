@@ -16,7 +16,7 @@ TestingSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 async def session():
     """Создание сессии для теста"""
     # Создаем все таблицы в тестовой базе
