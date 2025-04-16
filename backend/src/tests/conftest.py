@@ -1,45 +1,31 @@
+# backend/src/tests/conftest.py
 import pytest
-from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
-from backend.src.config import settings
-from backend.src.database.main import get_session
-
-# Используем строку подключения из настроек
-DATABASE_URL = settings.postgres_url  # Получаем строку подключения из конфигов
-
-# Создание асинхронного движка
-engine = create_async_engine(DATABASE_URL, echo=True)
-
-# Сессия для тестовой базы
-TestingSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
-)
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from backend.src.config import settings  # настройка подключения
 
 @pytest.fixture(scope="function")
 async def session():
-    """Создание сессии для теста"""
-    # Создаем все таблицы в тестовой базе
+    """
+    Фикстура для создания сессии для каждого теста.
+    Создаем новый движок и сессию для тестов.
+    """
+    # создаем асинхронный движок для тестов
+    engine = create_async_engine(settings.postgres_url, echo=False)
+
+    # создаем таблицы для теста
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
-    # Создаем сессию
-    session = TestingSessionLocal()
+    # создаем сессию
+    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    yield session  # Передаем сессию в тесты
+    # создаем сессию для выполнения запросов
+    async with async_session() as session:
+        yield session  # возвращаем сессию для теста
 
-    # Очистка после завершения тестов
-    await session.close()
+    # cleanup: удаляем все таблицы после теста
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
-
-
-@pytest.fixture
-def client(session):
-    """Фикстура для FastAPI клиента"""
-    from fastapi.testclient import TestClient
-    from backend.src.__init__ import app
-
-    app.dependency_overrides[get_session] = lambda: session
-    return TestClient(app)
+    await engine.dispose()  # закрываем движок

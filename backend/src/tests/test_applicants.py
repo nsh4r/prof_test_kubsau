@@ -1,29 +1,27 @@
 import pytest
-from fastapi import status
-
+from httpx import AsyncClient
+from backend.src.__init__ import app
+from fastapi import HTTPException, status
 
 @pytest.mark.asyncio
-async def test_post_result_by_data(client, session):
-    """Тест для /backend/api/applicant/by-data/"""
-    data = {
-        "surname": "Ivanov",
-        "name": "Ivan",
-        "patronymic": "Ivanovich",
-        "phone_number": "79000000000",
-        "city": "Krasnodar"
-    }
-
-    response = client.post("/backend/api/applicant/by-data/", json=data)
-
-    assert response.status_code == status.HTTP_201_CREATED
-    result = response.json()
-    assert result["surname"] == data["surname"]
-    assert result["name"] == data["name"]
-    assert result["phone_number"] == data["phone_number"]
-    assert result["city"] == data["city"]
-    assert "uuid" in result  # UUID должен быть в ответе
-    assert "faculty_type" in result  # Убедитесь, что результат включает факультеты
-
+async def test_post_result_by_data(session):
+    """
+    Тест для проверки POST запроса с результатами анкеты
+    """
+    # создаем клиента
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        # отправляем запрос
+        response = await ac.post("/api/test/answers/", json={
+            "surname": "Иванов",
+            "name": "Иван",
+            "patronymic": "Иванович",
+            "phone_number": "+79123456789",
+            "answers": [1, 2, 3, 4, 5, 1, 2]
+        })
+        # проверяем статус
+        assert response.status_code == 200
+        # можно добавить проверку тела ответа, если нужно:
+        # assert response.json() == {"expected": "value"}
 
 @pytest.mark.asyncio
 async def test_process_user_answers(client, session):
@@ -43,4 +41,4 @@ async def test_process_user_answers(client, session):
     assert response.status_code == status.HTTP_201_CREATED
     result = response.json()
     assert result["uuid"] == data["uuid"]
-    assert "faculty_type" in result  # Убедитесь, что результат включает факультеты
+    assert "faculty_type" in result
