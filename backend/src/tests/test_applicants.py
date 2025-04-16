@@ -1,31 +1,32 @@
+# backend/src/tests/test_applicants.py
 import pytest
+from fastapi import status
 from httpx import AsyncClient
-from backend.src.__init__ import app
-from fastapi import HTTPException, status
 
 @pytest.mark.asyncio
-async def test_post_result_by_data(session):
+async def test_post_result_by_data(session, client):
     """
     Тест для проверки POST запроса с результатами анкеты
     """
-    # создаем клиента
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        # отправляем запрос
-        response = await ac.post("/api/test/answers/", json={
-            "surname": "Иванов",
-            "name": "Иван",
-            "patronymic": "Иванович",
-            "phone_number": "+79123456789",
-            "answers": [1, 2, 3, 4, 5, 1, 2]
-        })
-        # проверяем статус
-        assert response.status_code == 200
-        # можно добавить проверку тела ответа, если нужно:
-        # assert response.json() == {"expected": "value"}
+    response = await client.post("/backend/api/applicant/by-data/", json={
+        "surname": "Иванов",
+        "name": "Иван",
+        "patronymic": "Иванович",
+        "phone_number": "+79123456789",
+        "city": "Москва"
+    })
+    assert response.status_code == status.HTTP_201_CREATED
+    result = response.json()
+    assert result["surname"] == "Иванов"
+    assert result["name"] == "Иван"
+    assert result["patronymic"] == "Иванович"
+    assert result["phone_number"] == "+79123456789"
 
 @pytest.mark.asyncio
 async def test_process_user_answers(client, session):
-    """Тест для /backend/api/results/"""
+    """
+    Тест для POST запроса обработки ответов пользователя
+    """
     data = {
         "uuid": "some-uuid",  # Используем реальный UUID абитуриента для теста
         "answers": [
@@ -35,9 +36,7 @@ async def test_process_user_answers(client, session):
             }
         ]
     }
-
-    response = client.post("/backend/api/results/", json=data)
-
+    response = await client.post("/backend/api/results/", json=data)
     assert response.status_code == status.HTTP_201_CREATED
     result = response.json()
     assert result["uuid"] == data["uuid"]
