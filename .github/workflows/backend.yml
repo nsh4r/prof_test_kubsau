@@ -1,0 +1,74 @@
+name: KUBSAU-ProfTest-Backend-CI
+
+on:
+  push:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'frontend/**'
+  pull_request:
+    branches: [ "master" ]
+    paths-ignore:
+      - 'frontend/**'
+
+env:
+  IMAGE_VERSION: ${{ github.run_number }}
+
+jobs:
+  backend:
+    name: Build & Test Backend
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.12]
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_USER: ${{ vars.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          POSTGRES_DB: ${{ vars.DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry & Dependencies
+        run: |
+          pipx install poetry==1.7.0
+          poetry env use 3.12
+          poetry install --with test
+
+      - name: Run Flake8
+        run: |
+          poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        continue-on-error: true
+
+      - name: Run Pytest
+        env:
+          DATABASE_URL: "postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}"
+        run: |
+          poetry run pytest --asyncio-mode=auto
+
+      - name: Set SHORT_SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Call Docker Reusable Workflow for Backend
+        uses: ./.github/workflows/docker-build.yml
+        with:
+          context: .
+          dockerfile: ./Dockerfile
+          image_tag: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}
