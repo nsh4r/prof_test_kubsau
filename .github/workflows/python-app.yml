@@ -2,10 +2,13 @@ name: KUBSAU-ProfTest-CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: "master"
+    paths-ignore:
+      - 'frontend/**'
   pull_request:
-    branches: [ "master" ]
-
+    branches: "master"
+    paths-ignore:
+      - 'frontend/**'
 env:
   IMAGE_VERSION: ${{ github.run_number }}
 
