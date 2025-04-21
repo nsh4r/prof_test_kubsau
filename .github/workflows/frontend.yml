@@ -1,10 +1,6 @@
 name: KUBSAU-ProfTest-Frontend-CI
 
 on:
-  push:
-    branches: [ "master" ]
-    paths:
-      - 'frontend/**'
   pull_request:
     branches: [ "master" ]
     paths:
@@ -26,7 +22,7 @@ jobs:
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Call Docker Reusable Workflow for Frontend
-        uses: nsh4r/prof_test_kubsau/.github/workflows/docker-build.yml@master
+        uses: ./.github/workflows/docker-build.yml
         with:
           context: ./frontend
           dockerfile: ./frontend/Dockerfile
