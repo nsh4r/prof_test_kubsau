@@ -1,0 +1,33 @@
+name: KUBSAU-ProfTest-Frontend-CI
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ "master" ]
+    paths:
+      - 'frontend/**'
+
+env:
+  IMAGE_VERSION: ${{ github.run_number }}
+
+jobs:
+  frontend:
+    name: Build & Push Frontend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set SHORT_SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      - name: Call Docker Reusable Workflow for Frontend
+        uses: ./.github/workflows/docker-build.yml
+        with:
+          context: ./frontend
+          dockerfile: ./frontend/Dockerfile
+          image_tag: ${{ secrets.ACCESS_NAME }}/frontend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}
