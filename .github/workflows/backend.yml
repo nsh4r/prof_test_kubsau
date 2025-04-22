@@ -65,6 +65,6 @@ jobs:
       - name: Call Docker Reusable Workflow for Backend
         uses: ./.github/workflows/docker-build.yml
         with:
-          context: .
+          context:
           dockerfile: ./Dockerfile
           image_tag: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}
