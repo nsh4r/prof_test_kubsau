@@ -1,22 +1,11 @@
-name: KUBSAU-ProfTest-Backend-CI
+name: Backend CI
 
 on:
-  pull_request:
-    branches: [ "master" ]
-    paths-ignore:
-      - 'frontend/**'
-
-env:
-  IMAGE_VERSION: ${{ github.run_number }}
+  workflow_call:
 
 jobs:
   backend:
-    name: Build & Test Backend
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.12]
-
     services:
       postgres:
         image: postgres
@@ -34,26 +23,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.12
 
-      - name: Install Poetry & Dependencies
+      - name: Install dependencies
         run: |
           pipx install poetry==1.7.0
           poetry env use 3.12
           poetry install --with test
 
-      - name: Run Flake8
+      - name: Static analysis
         run: |
           poetry run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         continue-on-error: true
 
-      - name: Run Pytest
+      - name: Run Tests
         env:
           DATABASE_URL: "postgresql://${{ vars.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ vars.DB_NAME }}"
           DB_USER: ${{vars.DB_USER}}
@@ -65,13 +54,18 @@ jobs:
           poetry run pytest --asyncio-mode=auto
 
       - name: Set SHORT_SHA
-        run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+        run: |
+          echo SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-7) >> $GITHUB_ENV
 
-      - name: Call Docker Reusable Workflow for Backend
+      - name: Docker Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.ACCESS_NAME }}
+          password: ${{ secrets.ACCESS_TOKEN }}
 
-        uses: ./.prof_test_kubsau/.github/workflows/docker-build.yml
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          dockerfile: ./Dockerfile
-          image_tag: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}
-
+          push: true
+          tags: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}

@@ -1,0 +1,39 @@
+name: Dispatch Build Trigger
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'Dockerfile'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+            frontend:
+              - 'frontend/**'
+
+  trigger-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    uses: ./.github/workflows/backend.yml
+    secrets: inherit
+
+  trigger-frontend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    uses: ./.github/workflows/frontend.yml
+    secrets: inherit
