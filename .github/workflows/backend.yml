@@ -63,8 +63,9 @@ jobs:
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Call Docker Reusable Workflow for Backend
-        uses: ./.github/workflows/docker-build.yml
+        uses: prof_test_kubsau/.github/workflows/docker-build.yml@master
         with:
-          context:
+          context: .
           dockerfile: ./Dockerfile
           image_tag: ${{ secrets.ACCESS_NAME }}/backend-app:${{ vars.TAG_VERSION }}.${{ env.SHORT_SHA }}
+
