@@ -22,7 +22,7 @@ jobs:
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Call Docker Reusable Workflow for Frontend
-        uses: prof_test_kubsau/.github/workflows/docker-build.yml@master
+        uses: ./.prof_test_kubsau/.github/workflows/docker-build.yml@master
         with:
           context: ./frontend
           dockerfile: ./frontend/Dockerfile
