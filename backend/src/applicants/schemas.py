@@ -61,3 +61,6 @@ class ApplicantAnswers(SQLModel):
                                                                                    "0af41b33-1780-4603-ba5c-4777496fcce7"]},
         {"question_id": "df2c6f0c-4d4f-4803-a573-c74c9c96f57f", "answer_ids": ["8cbbd1d1-e2b1-45b6-a210-b86018adb25b"]}
     ]})
+
+class ApplicantUUIDResponse(SQLModel):
+    uuid: UUID = Field(schema_extra={'example': 'a1b2c3d4-e5f6-7890-1234-56789abcdef0'})

@@ -2,9 +2,10 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
 from fastapi import HTTPException, status
 from sqlalchemy.sql.expression import delete
+from uuid import UUID
 
 from backend.src.database.models import Applicant, Faculty, ApplicantFaculty, FacultyType, Question, Answer, AnswerFaculty
-from backend.src.applicants.schemas import ResponseResult, FacultyTypeSch, ApplicantAnswers
+from backend.src.applicants.schemas import ResponseResult, FacultyTypeSch, ApplicantAnswers, ApplicantInfo
 
 
 class ResultService:
@@ -13,25 +14,40 @@ class ResultService:
     """
 
     def __init__(self, session: AsyncSession):
+        """
+        Initialize the ResultService with a database session.
+        
+        Args:
+            session: AsyncSession for database operations
+        """
         self.session = session
 
-    async def post_result_by_data(self, user_data):
+    async def register_or_get_applicant(self, user_data: ApplicantInfo) -> UUID:
         """
-        Find or create an applicant by full name and phone number.
-
+        Register new applicant or get existing one by phone number.
+        
         Args:
-            user_data: The user data containing surname, name, patronymic, and phone_number.
-
+            user_data: Applicant information containing:
+                - surname: str
+                - name: str
+                - patronymic: str | None
+                - phone_number: str
+                - city: str | None
+                
         Returns:
-            ResponseResult: The result object.
+            UUID: The UUID of the applicant (new or existing)
+            
+        Notes:
+            - If applicant exists, updates their personal information
+            - If applicant doesn't exist, creates new record
         """
-        # Проверяем, существует ли уже абитуриент по номеру телефона
+
         existing_applicant = await self.session.exec(select(Applicant).where(
             Applicant.phone_number == user_data.phone_number
         ))
         existing_applicant = existing_applicant.first()
 
-        # Если найден, обновляем ФИО
+
         if existing_applicant:
             existing_applicant.surname = user_data.surname
             existing_applicant.name = user_data.name
@@ -39,8 +55,9 @@ class ResultService:
             existing_applicant.city = user_data.city
             await self.session.commit()
             await self.session.refresh(existing_applicant)
+            return existing_applicant.uuid
         else:
-            # Если абитуриента нет, создаем нового
+
             new_applicant = Applicant(
                 surname=user_data.surname,
                 name=user_data.name,
@@ -51,11 +68,28 @@ class ResultService:
             self.session.add(new_applicant)
             await self.session.commit()
             await self.session.refresh(new_applicant)
-            existing_applicant = new_applicant
+            return new_applicant.uuid
 
-        # Получаем связанные результаты
+    async def get_applicant_results(self, applicant_uuid: UUID) -> ResponseResult:
+        """
+        Get applicant results by UUID.
+        
+        Args:
+            applicant_uuid: UUID of the applicant
+            
+        Returns:
+            ResponseResult: Object containing applicant data and test results
+            
+        Raises:
+            HTTPException: 404 if applicant not found
+        """
+        applicant = await self.session.exec(select(Applicant).where(Applicant.uuid == applicant_uuid))
+        applicant = applicant.first()
+        if not applicant:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Applicant not found")
+
         applicant_faculties = await self.session.exec(select(ApplicantFaculty).where(
-            ApplicantFaculty.applicant_id == existing_applicant.uuid
+            ApplicantFaculty.applicant_id == applicant.uuid
         ))
         applicant_faculties = applicant_faculties.all()
 
@@ -83,34 +117,37 @@ class ResultService:
             faculties_list.append(faculty_type_obj)
 
         return ResponseResult(
-            uuid=existing_applicant.uuid,
-            surname=existing_applicant.surname,
-            name=existing_applicant.name,
-            patronymic=existing_applicant.patronymic,
-            city=existing_applicant.city,
-            phone_number=existing_applicant.phone_number,
+            uuid=applicant.uuid,
+            surname=applicant.surname,
+            name=applicant.name,
+            patronymic=applicant.patronymic,
+            city=applicant.city,
+            phone_number=applicant.phone_number,
             faculty_type=faculties_list
         )
 
-    from sqlmodel import select
-
-    async def process_user_answers(self, user_data: ApplicantAnswers):
+    async def process_user_answers(self, user_data: ApplicantAnswers) -> ResponseResult:
         """
         Process user answers and update test results for an existing Applicant.
-
+        
         Args:
-            user_data: An object containing the applicant's uuid and the testing answers.
-
+            user_data: Contains:
+                - uuid: Applicant UUID
+                - answers: List of answers with question_id and answer_ids
+                
         Returns:
-            ResponseResult: The result object with applicant details and faculty type results.
+            ResponseResult: Updated test results
+            
+        Raises:
+            ValueError: If applicant not found
         """
-        # Получаем абитуриента по uuid
+
         applicant = await self.session.exec(select(Applicant).where(Applicant.uuid == user_data.uuid))
         applicant = applicant.first()
         if not applicant:
             raise ValueError("Абитуриент с таким uuid не найден")
 
-        # Удаляем существующие результаты тестирования для абитуриента
+        
         existing_faculties = await self.session.exec(
             select(ApplicantFaculty).where(ApplicantFaculty.applicant_id == applicant.uuid)
         )
@@ -118,7 +155,7 @@ class ResultService:
             await self.session.delete(faculty)
         await self.session.commit()
 
-        # Подсчёт баллов для каждого факультета
+        
         faculty_scores = {}
         for answer_data in user_data.answers:
             for answer_id in answer_data.answer_ids:
@@ -127,11 +164,11 @@ class ResultService:
                 )
                 for answer_faculty in answer_faculties.all():
                     faculty_scores[answer_faculty.faculty_type_id] = (
-                            faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
+                        faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
                     )
 
         faculties_list = []
-        # Формирование списка результатов для каждого типа факультета
+        
         for faculty_type_id, score in faculty_scores.items():
             faculty_type_result = await self.session.exec(
                 select(FacultyType).where(FacultyType.uuid == faculty_type_id)
@@ -152,7 +189,7 @@ class ResultService:
             )
             faculties_list.append(faculty_type_sch)
 
-            # Сохранение нового результата тестирования для данного факультета
+           
             new_applicant_faculty = ApplicantFaculty(
                 applicant_id=applicant.uuid,
                 faculty_type_id=faculty_type_id,
@@ -163,7 +200,7 @@ class ResultService:
         await self.session.commit()
 
         return ResponseResult(
-            uuid=applicant.uuid,  # Добавляем uuid абитуриента
+            uuid=applicant.uuid,
             surname=applicant.surname,
             name=applicant.name,
             patronymic=applicant.patronymic,
@@ -179,24 +216,38 @@ class QuestionService:
     """
 
     def __init__(self, session: AsyncSession):
+        """
+        Initialize the QuestionService with a database session.
+        
+        Args:
+            session: AsyncSession for database operations
+        """
         self.session = session
 
-    async def get_all_questions(self):
+    async def get_all_questions(self) -> list[dict]:
         """
         Get all questions with their answers.
-
+        
         Returns:
-            list: A list of questions with answers.
+            list: A list of dictionaries containing:
+                - id: Question UUID
+                - question: Question text
+                - answers: List of answer objects
+                
+        Raises:
+            HTTPException: 404 if no questions found
         """
+        
         questions_dict = {}
 
-        questions_query = (select(Question, Answer).join(Answer).
-                           where(Question.uuid == Answer.question_id))
+        questions_query = (select(Question, Answer).join(Answer)
+                          .where(Question.uuid == Answer.question_id))
         question_res_query = await self.session.exec(questions_query)
         question_res_query = question_res_query.all()
 
         if not question_res_query:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Questions not found!')
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                              detail='Questions not found!')
 
         for question, answer in question_res_query:
             if question.uuid not in questions_dict:
