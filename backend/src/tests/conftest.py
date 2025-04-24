@@ -1,11 +1,10 @@
-# backend/src/tests/conftest.py
 import asyncio
 import pytest
 from httpx import AsyncClient
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from backend.src.database.main import get_session
 from backend.src.__init__ import app
@@ -55,15 +54,24 @@ async def client(prepare_database):
 @pytest.fixture()
 async def test_data():
     async with TestSessionLocal() as session:
-        # Создаем тестовые факультеты
+        # Создаем тестовые данные в правильном порядке
         faculty_type1 = FacultyType(uuid=UUID("11111111-1111-1111-1111-111111111111"), 
                                  name="Технический")
         faculty_type2 = FacultyType(uuid=UUID("22222222-2222-2222-2222-222222222222"), 
                                  name="Гуманитарный")
         
-        # Создаем тестовые вопросы и ответы
+        # Сначала добавляем типы факультетов
+        session.add(faculty_type1)
+        session.add(faculty_type2)
+        await session.commit()
+        
+        # Затем создаем вопрос
         question = Question(uuid=UUID("11111111-1111-1111-1111-111111111111"), 
                           text="Тестовый вопрос")
+        session.add(question)
+        await session.commit()
+        
+        # Затем создаем ответы
         answer1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), 
                         text="Тестовый ответ 1", 
                         question_id=question.uuid)
@@ -71,7 +79,11 @@ async def test_data():
                         text="Тестовый ответ 2", 
                         question_id=question.uuid)
         
-        # Связываем ответы с факультетами
+        session.add(answer1)
+        session.add(answer2)
+        await session.commit()
+        
+        # Затем создаем связи ответов с факультетами
         answer_faculty1 = AnswerFaculty(answer_id=answer1.uuid, 
                                       faculty_type_id=faculty_type1.uuid, 
                                       score=10)
@@ -79,6 +91,6 @@ async def test_data():
                                       faculty_type_id=faculty_type2.uuid, 
                                       score=5)
         
-        session.add_all([faculty_type1, faculty_type2, question, answer1, answer2, 
-                       answer_faculty1, answer_faculty2])
+        session.add(answer_faculty1)
+        session.add(answer_faculty2)
         await session.commit()
