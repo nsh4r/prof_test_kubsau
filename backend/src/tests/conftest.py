@@ -94,3 +94,4 @@ async def test_data():
         session.add(answer_faculty1)
         session.add(answer_faculty2)
         await session.commit()
+        
