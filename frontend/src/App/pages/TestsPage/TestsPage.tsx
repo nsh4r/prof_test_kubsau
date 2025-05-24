@@ -7,9 +7,7 @@ import { useNavigate } from "react-router-dom";
 export const TestsPage = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<string, string>
-  >({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,14 +22,8 @@ export const TestsPage = () => {
     };
     setSelectedAnswers(newSelectedAnswers);
 
-    // Проверяем, все ли вопросы отвечены после обновления ответов
-    const allQuestionsAnswered = questions.every(
-      (question) => newSelectedAnswers[question.id] !== undefined
-    );
-
-    if (allQuestionsAnswered) {
-      submitResults();
-    } else if (currentQuestionIndex < totalQuestions - 1) {
+    // Автоматический переход к следующему вопросу, если это не последний вопрос
+    if (currentQuestionIndex < totalQuestions - 1) {
       setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }, 300);
@@ -51,7 +43,10 @@ export const TestsPage = () => {
   };
 
   const submitResults = async () => {
-    if (!areAllQuestionsAnswered()) return;
+    if (!areAllQuestionsAnswered()) {
+      setError("Пожалуйста, ответьте на все вопросы перед завершением теста");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -208,16 +203,26 @@ export const TestsPage = () => {
               Предыдущий
             </button>
 
-            <button
-              className={styles.navButton}
-              onClick={() =>
-                currentQuestionIndex < totalQuestions - 1 &&
-                setCurrentQuestionIndex(currentQuestionIndex + 1)
-              }
-              disabled={currentQuestionIndex === totalQuestions - 1}
-            >
-              Следующий
-            </button>
+            {areAllQuestionsAnswered() ? (
+              <button
+                className={styles.finishButton}
+                onClick={submitResults}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Отправка..." : "Завершить тест"}
+              </button>
+            ) : (
+              <button
+                className={styles.navButton}
+                onClick={() =>
+                  currentQuestionIndex < totalQuestions - 1 &&
+                  setCurrentQuestionIndex(currentQuestionIndex + 1)
+                }
+                disabled={currentQuestionIndex === totalQuestions - 1}
+              >
+                Следующий
+              </button>
+            )}
           </div>
         </main>
       </div>

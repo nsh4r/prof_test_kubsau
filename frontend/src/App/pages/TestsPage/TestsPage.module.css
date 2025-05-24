@@ -204,3 +204,22 @@
   font-weight: 500;
 }
 
+.finishButton {
+  background-color: #ffffff;
+  color: #15803d;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.finishButton:hover:not(:disabled) {
+  background-color: #ffffff;
+}
+
+.finishButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

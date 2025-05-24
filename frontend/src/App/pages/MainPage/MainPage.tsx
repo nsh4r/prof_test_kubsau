@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const schema = z.object({
   phone_number: z.string()
-    .length(11, 'Введите 11 цифр по шаблону 79*********')
+    .length(11, 'Попробуйсте ввести 11 цифр по шаблону 79*********')
     .regex(/^79\d{9}$/, 'Номер должен начинаться с 79 и содержать 11 цифр'),
   surname: z
     .string()
@@ -88,7 +88,7 @@ export const MainPage = () => {
     }
   };
 
-  // Обработчик для номера телефона (формат 79528744012)
+  // Обработчик для номера телефона (формат 79000000000)
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, ''); // Удаляем все не-цифры
     if (value.length > 11) {
@@ -131,13 +131,13 @@ export const MainPage = () => {
           <input
             {...register("phone_number")}
             className={styles.input}
-            placeholder="79528744012"
+            placeholder="79000000000"
             type="tel"
             disabled={isLoading}
             onChange={handlePhoneChange}
             value={watch("phone_number") || ''}
           />
-          <div className={styles.hint}>Введите 11 цифр, начиная с 79</div>
+          <div className={styles.hint}>Введите номер телефона, 79...</div>
           {errors.phone_number && (
             <span className={styles.error}>{errors.phone_number.message}</span>
           )}
