@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field, Column
+from sqlmodel import SQLModel, Field, Column, JSON
 import sqlalchemy.dialects.postgresql as pg
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -45,7 +45,12 @@ class Applicant(SQLModel, table=True):
     patronymic: str | None = Field(max_length=30, default=None)
     phone_number: str | None = Field(max_length=11, unique=True)
     city: str | None = Field(max_length=30)
+    applicants_exams: dict = Field(default_factory=dict, sa_column=Column(JSON))
     dt_created: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
+    
+    #Need for JSON
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class FacultyType(SQLModel, table=True):
@@ -69,8 +74,13 @@ class Faculty(SQLModel, table=True):
     )
     name: str | None = Field(max_length=50)
     url: str | None = Field(max_length=200)
+    exams: dict = Field(default_factory=dict, sa_column=Column(JSON))
 
     type_id: UUID = Field(default=None, foreign_key='faculty_type.uuid')
+    
+    #Need for JSON
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class Answer(SQLModel, table=True):

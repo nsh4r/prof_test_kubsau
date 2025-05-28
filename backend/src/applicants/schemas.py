@@ -1,4 +1,4 @@
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, JSON, Column
 from uuid import UUID
 
 class ApplicantInfo(SQLModel):
@@ -8,6 +8,8 @@ class ApplicantInfo(SQLModel):
     patronymic: str | None = Field(default=None, schema_extra={'example': 'Ivanovich'})
     phone_number: str = Field(schema_extra={'example': '79000000000'}, max_length=11, regex=r'^79\d{9}$')
     city: str = Field(default=None, schema_extra={'example': 'Krasnodar'})
+    applicants_exams: dict = Field(default_factory=dict, sa_column=Column(JSON),
+                                   schema_extra={'example': 'Русский язык, Математики Профиль, Информатика'})
 
 
 class Faculty(SQLModel):
@@ -15,6 +17,9 @@ class Faculty(SQLModel):
 
     name: str = Field(min_length=1, schema_extra={'example': 'Прикладной информатики'})
     url: str = Field(min_length=1, schema_extra={'example': 'https://...'})
+    exams: dict = Field(default_factory=dict, sa_column=Column(JSON),
+                                   schema_extra={'example': 'Русский язык, Математики Профиль, Информатика'})
+
 
 
 class FacultyTypeSch(SQLModel):

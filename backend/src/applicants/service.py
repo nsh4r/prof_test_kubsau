@@ -33,6 +33,7 @@ class ResultService:
                 - patronymic: str | None
                 - phone_number: str
                 - city: str | None
+                - applicant_exams: dict
                 
         Returns:
             UUID: The UUID of the applicant (new or existing)
@@ -53,6 +54,7 @@ class ResultService:
             existing_applicant.name = user_data.name
             existing_applicant.patronymic = user_data.patronymic
             existing_applicant.city = user_data.city
+            existing_applicant.applicants_exams = user_data.applicants_exams
             await self.session.commit()
             await self.session.refresh(existing_applicant)
             return existing_applicant.uuid
@@ -63,7 +65,8 @@ class ResultService:
                 name=user_data.name,
                 patronymic=user_data.patronymic,
                 phone_number=user_data.phone_number,
-                city=user_data.city
+                city=user_data.city,
+                applicants_exams=user_data.applicants_exams
             )
             self.session.add(new_applicant)
             await self.session.commit()
@@ -123,6 +126,7 @@ class ResultService:
             patronymic=applicant.patronymic,
             city=applicant.city,
             phone_number=applicant.phone_number,
+            applicants_exams=applicant.applicants_exams,
             faculty_type=faculties_list
         )
 
@@ -206,6 +210,7 @@ class ResultService:
             patronymic=applicant.patronymic,
             city=applicant.city,
             phone_number=applicant.phone_number,
+            applicants_exams=applicant.applicants_exams,
             faculty_type=faculties_list
         )
 

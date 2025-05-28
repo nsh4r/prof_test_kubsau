@@ -11,7 +11,8 @@ async def test_register_applicant(client: AsyncClient):
         "name": "Ivan",
         "patronymic": "Ivanovich",
         "phone_number": "79123456789",
-        "city": "Moscow"
+        "city": "Moscow",
+        "applicants_exams": {"Русский язык", "Математика Профиль", "Матеи"}
     })
     assert response.status_code == 200
     data = response.json()
