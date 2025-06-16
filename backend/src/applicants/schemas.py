@@ -1,5 +1,15 @@
 from sqlmodel import Field, SQLModel
 from uuid import UUID
+from typing import Optional, List
+
+
+class ExamScore(SQLModel):
+    """Данные об экзамене и балле абитуриента"""
+    exam_id: UUID = Field(schema_extra={"example": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"})
+    exam_name: str = Field(schema_extra={"example": "Математика (профиль)"})
+    exam_code: str = Field(schema_extra={"example": "math_profile"})
+    score: int = Field(ge=0, le=100, schema_extra={"example": 75})
+
 
 class ApplicantInfo(SQLModel):
     """Входные данные для API получения результата"""
@@ -8,6 +18,7 @@ class ApplicantInfo(SQLModel):
     patronymic: str | None = Field(default=None, schema_extra={"example": "Ivanovich"})
     phone_number: str = Field(schema_extra={"example": "79000000000"}, max_length=11, regex=r"^79\d{9}$")
     city: str = Field(default=None, schema_extra={"example": "Krasnodar"})
+    exams: List[ExamScore] = Field(default=[], description="Список сданных экзаменов и баллов")
 
 
 class Faculty(SQLModel):
@@ -90,3 +101,18 @@ class RequiredExams(SQLModel):
     required_exams: list[RequiredExam] = Field(schema_extra={"example": [
         {"faculty_id": "a1b2c3d4-e5f6-7890-1234-56789abcdef0", "faculty_name": "Информационные системы",
          "exam_id": "a1b2c3d4-e5f6-7890-1234-56789abcdef0", "exam_code": "math_base", "min_score": "55"}]})
+
+
+class ApplicantExamResult(SQLModel):
+    """Результат экзамена абитуриента"""
+    exam_id: UUID = Field(schema_extra={"example": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"})
+    exam_name: str = Field(schema_extra={"example": "Математика (профиль)"})
+    exam_code: str = Field(schema_extra={"example": "math_profile"})
+    score: int = Field(schema_extra={"example": 85})
+
+
+class ResponseResult(ApplicantInfo):
+    """Выходные данные для API получения результата"""
+    uuid: UUID = Field(schema_extra={"example": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"})
+    faculty_type: list[FacultyTypeSch]
+    exams: List[ApplicantExamResult] = Field(default=[], description="Сданные экзамены и баллы")

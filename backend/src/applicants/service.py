@@ -5,9 +5,9 @@ from sqlalchemy.sql.expression import delete
 from uuid import UUID
 
 from backend.src.database.models import (Applicant, Faculty, ApplicantFaculty, FacultyType, Question, Answer,
-                                         AnswerFaculty, Exam, FacultyExamRequirement)
+                                         AnswerFaculty, Exam, FacultyExamRequirement, ApplicantExam)
 from backend.src.applicants.schemas import (ResponseResult, FacultyTypeSch, ApplicantAnswers, ApplicantInfo, Exams,
-                                            QuestionSch, AnswerSch, RequiredExams, RequiredExam)
+                                            QuestionSch, AnswerSch, RequiredExams, RequiredExam, ApplicantExamResult)
 
 
 class ResultService:
@@ -18,7 +18,7 @@ class ResultService:
     def __init__(self, session: AsyncSession):
         """
         Initialize the ResultService with a database session.
-        
+
         Args:
             session: AsyncSession for database operations
         """
@@ -27,7 +27,7 @@ class ResultService:
     async def register_or_get_applicant(self, user_data: ApplicantInfo) -> UUID:
         """
         Register new applicant or get existing one by phone number.
-        
+
         Args:
             user_data: Applicant information containing:
                 - surname: str
@@ -35,31 +35,54 @@ class ResultService:
                 - patronymic: str | None
                 - phone_number: str
                 - city: str | None
-                
+                - exams: List[ExamScore] - список сданных экзаменов (с id, названием, кодом и баллами)
+
         Returns:
             UUID: The UUID of the applicant (new or existing)
-            
-        Notes:
-            - If applicant exists, updates their personal information
-            - If applicant doesn't exist, creates new record
-        """
 
+        Notes:
+            - If applicant exists, updates their personal information и экзамены
+            - If applicant doesn't exist, creates new record with экзаменами
+        """
         existing_applicant = await self.session.exec(select(Applicant).where(
             Applicant.phone_number == user_data.phone_number
         ))
         existing_applicant = existing_applicant.first()
 
-
         if existing_applicant:
+            # Обновляем основную информацию
             existing_applicant.surname = user_data.surname
             existing_applicant.name = user_data.name
             existing_applicant.patronymic = user_data.patronymic
             existing_applicant.city = user_data.city
+
+            # Удаляем старые экзамены абитуриента
+            await self.session.exec(delete(ApplicantExam).where(
+                ApplicantExam.applicant_id == existing_applicant.uuid
+            ))
+
+            # Добавляем новые экзамены
+            for exam_score in user_data.exams:
+                # Проверяем, существует ли экзамен
+                exam = await self.session.exec(select(Exam).where(Exam.uuid == exam_score.exam_id))
+                if not exam.first():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Exam with id {exam_score.exam_id} not found"
+                    )
+
+                new_applicant_exam = ApplicantExam(
+                    applicant_id=existing_applicant.uuid,
+                    exam_id=exam_score.exam_id,
+                    score=exam_score.score
+                )
+                self.session.add(new_applicant_exam)
+
             await self.session.commit()
             await self.session.refresh(existing_applicant)
             return existing_applicant.uuid
         else:
-
+            # Создаем нового абитуриента
             new_applicant = Applicant(
                 surname=user_data.surname,
                 name=user_data.name,
@@ -70,26 +93,63 @@ class ResultService:
             self.session.add(new_applicant)
             await self.session.commit()
             await self.session.refresh(new_applicant)
+
+            # Добавляем экзамены абитуриента
+            for exam_score in user_data.exams:
+                # Проверяем, существует ли экзамен
+                exam = await self.session.exec(select(Exam).where(Exam.uuid == exam_score.exam_id))
+                if not exam.first():
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Exam with id {exam_score.exam_id} not found"
+                    )
+
+                new_applicant_exam = ApplicantExam(
+                    applicant_id=new_applicant.uuid,
+                    exam_id=exam_score.exam_id,
+                    score=exam_score.score
+                )
+                self.session.add(new_applicant_exam)
+
+            await self.session.commit()
             return new_applicant.uuid
 
     async def get_applicant_results(self, applicant_uuid: UUID) -> ResponseResult:
         """
         Get applicant results by UUID.
-        
+
         Args:
             applicant_uuid: UUID of the applicant
-            
+
         Returns:
-            ResponseResult: Object containing applicant data and test results
-            
+            ResponseResult: Object containing applicant data, test results и сданные экзамены
+
         Raises:
             HTTPException: 404 if applicant not found
         """
+        # Получаем основную информацию об абитуриенте
         applicant = await self.session.exec(select(Applicant).where(Applicant.uuid == applicant_uuid))
         applicant = applicant.first()
         if not applicant:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Applicant not found")
 
+        # Получаем сданные экзамены абитуриента с информацией об экзаменах
+        applicant_exams = await self.session.exec(
+            select(ApplicantExam, Exam)
+            .join(Exam, ApplicantExam.exam_id == Exam.uuid)
+            .where(ApplicantExam.applicant_id == applicant.uuid)
+        )
+        exam_results = [
+            ApplicantExamResult(
+                exam_id=ae.ApplicantExam.exam_id,
+                exam_name=ae.Exam.name,
+                exam_code=ae.Exam.code,
+                score=ae.ApplicantExam.score
+            )
+            for ae in applicant_exams.all()
+        ]
+
+        # Получаем информацию о факультетах (как было раньше)
         applicant_faculties = await self.session.exec(select(ApplicantFaculty).where(
             ApplicantFaculty.applicant_id == applicant.uuid
         ))
@@ -125,7 +185,8 @@ class ResultService:
             patronymic=applicant.patronymic,
             city=applicant.city,
             phone_number=applicant.phone_number,
-            faculty_type=faculties_list
+            faculty_type=faculties_list,
+            exams=exam_results
         )
 
     async def process_user_answers(self, user_data: ApplicantAnswers) -> ResponseResult:
