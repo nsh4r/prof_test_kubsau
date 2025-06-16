@@ -4,7 +4,8 @@ from uuid import UUID
 
 
 @pytest.mark.asyncio
-async def test_register_applicant(client: AsyncClient):
+async def test_register_applicant(client: AsyncClient, test_data):
+    """Тест регистрации абитуриента с экзаменами"""
     response = await client.post("/backend/api/applicant/register/", json={
         "surname": "Ivanov",
         "name": "Ivan",
@@ -14,19 +15,20 @@ async def test_register_applicant(client: AsyncClient):
         "exams": [
             {
                 "exam_id": "44444444-4444-4444-4444-444444444444",
-                "exam_name": "Математика (профиль)",
-                "exam_code": "math_profile",
                 "score": 75
             }
         ]
     })
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
+    assert "uuid" in data
     assert UUID(data["uuid"])
 
 
 @pytest.mark.asyncio
-async def test_get_applicant_results(client: AsyncClient):
+async def test_get_applicant_results(client: AsyncClient, test_data):
+    """Тест получения результатов абитуриента"""
+    # Регистрируем абитуриента
     register_resp = await client.post("/backend/api/applicant/register/", json={
         "surname": "Petrov",
         "name": "Petr",
@@ -36,50 +38,41 @@ async def test_get_applicant_results(client: AsyncClient):
         "exams": [
             {
                 "exam_id": "44444444-4444-4444-4444-444444444444",
-                "exam_name": "Математика (профиль)",
-                "exam_code": "math_profile",
                 "score": 80
-            },
-            {
-                "exam_id": "55555555-5555-5555-5555-555555555555",
-                "exam_name": "Информатика",
-                "exam_code": "informatics",
-                "score": 85
             }
         ]
     })
-
+    assert register_resp.status_code == 200, register_resp.text
     uuid = register_resp.json()["uuid"]
 
+    # Получаем результаты
     response = await client.get(f"/backend/api/applicant/{uuid}")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
+
     assert data["uuid"] == uuid
-    assert len(data["exams"]) == 2
-    assert data["exams"][0]["exam_name"] == "Математика (профиль)"
+    assert data["surname"] == "Petrov"
+    assert len(data["exams"]) == 1
+    assert data["exams"][0]["exam_id"] == "44444444-4444-4444-4444-444444444444"
     assert data["exams"][0]["score"] == 80
 
 
 @pytest.mark.asyncio
 async def test_process_user_answers(client: AsyncClient, test_data):
+    """Тест обработки ответов пользователя"""
+    # Регистрируем абитуриента
     register_resp = await client.post("/backend/api/applicant/register/", json={
         "surname": "Sidorov",
         "name": "Sidr",
         "patronymic": "Sidorovich",
         "phone_number": "79111234567",
         "city": "Kazan",
-        "exams": [
-            {
-                "exam_id": "66666666-6666-6666-6666-666666666666",
-                "exam_name": "Русский язык",
-                "exam_code": "russian",
-                "score": 90
-            }
-        ]
+        "exams": []
     })
-
+    assert register_resp.status_code == 200, register_resp.text
     uuid = register_resp.json()["uuid"]
 
+    # Отправляем ответы
     payload = {
         "uuid": uuid,
         "answers": [
@@ -91,7 +84,7 @@ async def test_process_user_answers(client: AsyncClient, test_data):
     }
 
     response = await client.post("/backend/api/results/", json=payload)
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
     data = response.json()
     assert data["uuid"] == uuid
     assert len(data["faculty_type"]) > 0
@@ -99,48 +92,64 @@ async def test_process_user_answers(client: AsyncClient, test_data):
 
 @pytest.mark.asyncio
 async def test_get_questions(client: AsyncClient, test_data):
+    """Тест получения списка вопросов"""
     response = await client.get("/backend/api/questions/")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
     assert isinstance(data, list)
     assert len(data) > 0
+    assert "uuid" in data[0]
+    assert "text" in data[0]
 
 
 @pytest.mark.asyncio
 async def test_get_all_exams(client: AsyncClient, test_data):
+    """Тест получения списка всех экзаменов"""
     response = await client.get("/backend/api/exams/")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
     assert isinstance(data["exams"], list)
     assert len(data["exams"]) == 3
     assert data["exams"][0]["name"] == "Математика (профиль)"
+    assert data["exams"][0]["code"] == "math_profile"
 
 
 @pytest.mark.asyncio
 async def test_get_required_exams(client: AsyncClient, test_data):
+    """Тест получения списка требуемых экзаменов для факультета"""
     faculty_id = "77777777-7777-7777-7777-777777777777"
     response = await client.get(f"/backend/api/faculty/{faculty_id}/required-exams")
-    assert response.status_code == 200
+    assert response.status_code == 200, response.text
     data = response.json()
+
     assert isinstance(data["required_exams"], list)
     assert len(data["required_exams"]) == 2
+    assert data["required_exams"][0]["exam_id"] == "44444444-4444-4444-4444-444444444444"
     assert data["required_exams"][0]["min_score"] == 60
     assert data["required_exams"][0]["faculty_name"] == "Информационные системы"
 
 
 @pytest.mark.asyncio
-async def test_update_applicant_exams(client: AsyncClient):
-    # Сначала регистрируем абитуриента без экзаменов
+async def test_update_applicant_exams(client: AsyncClient, test_data):
+    """Тест обновления экзаменов абитуриента"""
+    # Первая регистрация без экзаменов
     register_resp = await client.post("/backend/api/applicant/register/", json={
         "surname": "Fedorov",
         "name": "Fedor",
         "patronymic": "Fedorovich",
         "phone_number": "79112223344",
-        "city": "Novosibirsk"
+        "city": "Novosibirsk",
+        "exams": []
     })
+    assert register_resp.status_code == 200, register_resp.text
     uuid = register_resp.json()["uuid"]
 
-    # Обновляем данные с экзаменами
+    # Проверяем, что экзаменов нет
+    get_resp = await client.get(f"/backend/api/applicant/{uuid}")
+    assert get_resp.status_code == 200, get_resp.text
+    assert len(get_resp.json()["exams"]) == 0
+
+    # Обновляем с экзаменами
     update_resp = await client.post("/backend/api/applicant/register/", json={
         "surname": "Fedorov",
         "name": "Fedor",
@@ -150,16 +159,16 @@ async def test_update_applicant_exams(client: AsyncClient):
         "exams": [
             {
                 "exam_id": "55555555-5555-5555-5555-555555555555",
-                "exam_name": "Информатика",
-                "exam_code": "informatics",
                 "score": 88
             }
         ]
     })
-    assert update_resp.status_code == 200
+    assert update_resp.status_code == 200, update_resp.text
 
-    # Проверяем, что экзамены обновились
+    # Проверяем обновление
     get_resp = await client.get(f"/backend/api/applicant/{uuid}")
+    assert get_resp.status_code == 200, get_resp.text
     data = get_resp.json()
     assert len(data["exams"]) == 1
+    assert data["exams"][0]["exam_id"] == "55555555-5555-5555-5555-555555555555"
     assert data["exams"][0]["score"] == 88
