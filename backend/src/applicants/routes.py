@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from backend.src.database.main import get_session
 from backend.src.applicants.schemas import (
-    ResponseResult, ApplicantAnswers, ApplicantInfo, ApplicantUUIDResponse
+    ResponseResult, ApplicantAnswers, ApplicantInfo, ApplicantUUIDResponse,
+    QuestionSch, AnswerSch, Exam, Exams, RequiredExams
 )
 from uuid import UUID
-from .service import ResultService, QuestionService
+from .service import ResultService, QuestionService, ExamsService
 
 api_router = APIRouter(prefix="/backend/api")
 
@@ -75,6 +76,7 @@ async def process_user_answers(user_data: ApplicantAnswers,
 
 @api_router.get("/questions/", 
                status_code=status.HTTP_200_OK,
+               response_model= QuestionSch,
                summary="Get all questions",
                description="Returns all questions with possible answers")
 async def get_all_questions(session: AsyncSession = Depends(get_session)):
@@ -89,3 +91,41 @@ async def get_all_questions(session: AsyncSession = Depends(get_session)):
     """
     service = QuestionService(session)
     return await service.get_all_questions()
+
+
+@api_router.get("/exam/",
+                status_code=status.HTTP_200_OK,
+                summary="Get all exams",
+                response_model=Exams,
+                description="Returns all exams")
+async def get_all_exams(session: AsyncSession = Depends(get_session)):
+    """
+    Get all questions with their answers.
+
+    Returns:
+        List of questions with answer options
+
+    Raises:
+        HTTPException: 404 if no questions found
+    """
+    service = ExamsService(session)
+    return await service.get_all_exams()
+
+
+@api_router.get("/exam/required",
+                status_code=status.HTTP_200_OK,
+                response_model=RequiredExams,
+                summary="Get all required exams for all faculties",
+                description="Returns all exams for faculties")
+async def get_all_required_exams(session: AsyncSession = Depends(get_session)):
+    """
+    Get all questions with their answers.
+
+    Returns:
+        List of questions with answer options
+
+    Raises:
+        HTTPException: 404 if no questions found
+    """
+    service = ExamsService(session)
+    return await service.get_all_required_exams()

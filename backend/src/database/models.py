@@ -1,8 +1,8 @@
-from sqlmodel import SQLModel, Field, Column
+from sqlmodel import SQLModel, Field, Column, Relationship
 import sqlalchemy.dialects.postgresql as pg
 from uuid import UUID, uuid4
 from datetime import datetime
-
+from typing import Optional, List
 
 class ApplicantFaculty(SQLModel, table=True):
     """
@@ -47,6 +47,8 @@ class Applicant(SQLModel, table=True):
     city: str | None = Field(max_length=30)
     dt_created: datetime = Field(sa_column=Column(pg.TIMESTAMP, default=datetime.now))
 
+    passed_exams: List["ApplicantExam"] = Relationship(back_populates="applicant")
+
 
 class FacultyType(SQLModel, table=True):
     """
@@ -71,6 +73,9 @@ class Faculty(SQLModel, table=True):
     url: str | None = Field(max_length=200)
 
     type_id: UUID = Field(default=None, foreign_key='faculty_type.uuid')
+    required_exams: List["FacultyExamRequirement"] = Relationship(
+        back_populates="faculty",
+        sa_relationship_kwargs={"primaryjoin": "Faculty.uuid == FacultyExamRequirement.faculty_id"})
 
 
 class Answer(SQLModel, table=True):
@@ -95,3 +100,46 @@ class Question(SQLModel, table=True):
         sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
     )
     text: str | None = Field(max_length=200)
+
+
+class Exam(SQLModel, table=True):
+    """
+    This class represent a EGE Exams in the database.
+    """
+    __tablename__ = 'exam'
+    uuid: UUID = Field(
+        sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
+    )
+    name: str = Field(max_length=50, nullable=False)
+    code: str = Field(max_length=50, nullable=False, unique=True)
+
+
+class FacultyExamRequirement(SQLModel, table=True):
+    """
+    This class contains what exams are required for the faculty + minimum scores.
+    """
+    __tablename__ = 'faculty_exam_requirement'
+    uuid: UUID = Field(
+        sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
+    )
+    faculty_id: UUID = Field(foreign_key="faculty.uuid")
+    exam_id: UUID = Field(foreign_key="exam.uuid")
+    min_score: int
+
+    faculty: Faculty = Relationship(back_populates="required_exams")
+    exam: Exam = Relationship()
+
+
+class ApplicantExam(SQLModel, table=True):
+    """
+    This class contains what exams the applicant passed and his scores.
+    """
+    uuid: UUID = Field(
+        sa_column=Column(pg.UUID, primary_key=True, unique=True, default=uuid4)
+    )
+    applicant_id: UUID = Field(foreign_key="applicant.uuid")
+    exam_id: UUID = Field(foreign_key="exam.uuid")
+    score: int
+
+    applicant: Applicant = Relationship(back_populates="passed_exams")
+    exam: Exam = Relationship()

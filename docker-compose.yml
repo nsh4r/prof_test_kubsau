@@ -1,6 +1,6 @@
 services:
   backend-app:
-    image: nsh4r/backend-app:${BE_TAG}
+    image: backend-app:${BE_TAG}
     restart: unless-stopped
     ports:
       - "${BE_PORT}:8080"
