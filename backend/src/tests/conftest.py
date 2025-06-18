@@ -4,14 +4,14 @@ from httpx import AsyncClient
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from backend.src.database.main import get_session
 from backend.src.__init__ import app
 from backend.src.config import settings
 from backend.src.database.models import (
     Applicant, Faculty, ApplicantFaculty,
-    FacultyType, Question, Answer, AnswerFaculty, Exam
+    FacultyType, Question, Answer, AnswerFaculty, Exam, FacultyExamRequirement
 )
 
 DATABASE_URL = settings.postgres_url
@@ -25,7 +25,7 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 async def prepare_database():
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
@@ -35,7 +35,7 @@ async def prepare_database():
         await conn.run_sync(SQLModel.metadata.drop_all)
 
 @pytest.fixture()
-async def client(prepare_database):
+async def client():
     async def override_get_session():
         async with TestSessionLocal() as session:
             yield session
@@ -78,3 +78,23 @@ async def test_data():
         exam2 = Exam(uuid=UUID("bde589f5-c13e-4606-ad55-c394038091b8"), name="Математика (базовая)", code="math_basic")
         session.add_all([exam1, exam2])
         await session.commit()
+
+        # Факультет с требованиями к экзаменам (для тестов ExamsService)
+        faculty = Faculty(uuid=uuid4(), name="Инженерный", type_id=faculty_type1.uuid)
+        session.add(faculty)
+        await session.commit()
+
+        requirement = FacultyExamRequirement(
+            faculty_id=faculty.uuid,
+            exam_id=exam1.uuid,
+            min_score=60
+        )
+        session.add(requirement)
+        await session.commit()
+
+        yield {
+            "faculty": faculty,
+            "exam1": exam1,
+            "exam2": exam2,
+            "requirement": requirement
+        }
