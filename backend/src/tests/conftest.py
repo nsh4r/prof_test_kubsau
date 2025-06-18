@@ -49,45 +49,42 @@ async def client(prepare_database):
     app.dependency_overrides.clear()
 
 @pytest.fixture()
-async def test_data():
+async def test_data(prepare_database):
     async with TestSessionLocal() as session:
         # Типы факультетов
-        faculty_type1 = FacultyType(uuid=uuid4(), name="Технический")
-        faculty_type2 = FacultyType(uuid=uuid4(), name="Гуманитарный")
-        session.add_all([faculty_type1, faculty_type2])
+        ft1 = FacultyType(uuid=uuid4(), name="Технический")
+        ft2 = FacultyType(uuid=uuid4(), name="Гуманитарный")
+        session.add_all([ft1, ft2])
         await session.commit()
 
         # Факультет
-        faculty = Faculty(uuid=uuid4(), name="Инженерный", type_id=faculty_type1.uuid)
+        faculty = Faculty(uuid=uuid4(), name="Инженерный", type_id=ft1.uuid, url="")
         session.add(faculty)
         await session.commit()
 
-        # Вопрос
+        # Вопрос и ответы
         question = Question(uuid=UUID("11111111-1111-1111-1111-111111111111"), text="Тестовый вопрос")
         session.add(question)
         await session.commit()
 
-        # Ответы
-        answer1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), text="Тестовый ответ 1", question_id=question.uuid)
-        answer2 = Answer(uuid=UUID("33333333-3333-3333-3333-333333333333"), text="Тестовый ответ 2", question_id=question.uuid)
-        session.add_all([answer1, answer2])
+        a1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), text="Ответ 1", question_id=question.uuid)
+        a2 = Answer(uuid=UUID("33333333-3333-3333-3333-333333333333"), text="Ответ 2", question_id=question.uuid)
+        session.add_all([a1, a2])
         await session.commit()
 
-        # Связи ответов с типами факультетов
-        answer_faculty1 = AnswerFaculty(answer_id=answer1.uuid, faculty_type_id=faculty_type1.uuid, score=10)
-        answer_faculty2 = AnswerFaculty(answer_id=answer2.uuid, faculty_type_id=faculty_type2.uuid, score=5)
-        session.add_all([answer_faculty1, answer_faculty2])
+        af1 = AnswerFaculty(answer_id=a1.uuid, faculty_type_id=ft1.uuid, score=10)
+        af2 = AnswerFaculty(answer_id=a2.uuid, faculty_type_id=ft2.uuid, score=5)
+        session.add_all([af1, af2])
         await session.commit()
 
         # Экзамены
-        exam1 = Exam(uuid=UUID("236e43f1-6d9a-42d2-bf80-514e7ed3030c"), name="Русский язык", code="rus")
-        exam2 = Exam(uuid=UUID("bde589f5-c13e-4606-ad55-c394038091b8"), name="Математика (базовая)", code="math_basic")
-        session.add_all([exam1, exam2])
+        e1 = Exam(uuid=UUID("236e43f1-6d9a-42d2-bf80-514e7ed3030c"), name="Русский язык", code="rus")
+        e2 = Exam(uuid=UUID("bde589f5-c13e-4606-ad55-c394038091b8"), name="Математика (базовая)", code="math_basic")
+        session.add_all([e1, e2])
         await session.commit()
 
-        # Требования к экзаменам
-        req1 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam1.uuid, min_score=60)
-        req2 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam2.uuid, min_score=40)
+        req1 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=e1.uuid, min_score=60)
+        req2 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=e2.uuid, min_score=40)
         session.add_all([req1, req2])
         await session.commit()
 
