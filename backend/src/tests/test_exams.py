@@ -1,6 +1,6 @@
 import pytest
 from uuid import uuid4
-from backend.src.database.models import Exam, Faculty, FacultyExamRequirement
+from backend.src.database.models import Exam, Faculty, FacultyExamRequirement, FacultyType
 from backend.src.applicants.service import ExamsService
 
 @pytest.mark.asyncio
@@ -18,11 +18,19 @@ async def test_get_all_exams(async_session):
     assert "rus" in codes
     assert "math" in codes
 
+
 @pytest.mark.asyncio
 async def test_get_all_required_exams(async_session):
-    faculty = Faculty(uuid=uuid4(), name="Инженерный")
+    faculty_type = FacultyType(uuid=uuid4(), name="Технический")
+    async_session.add(faculty_type)
+    await async_session.commit()
+
+    faculty = Faculty(uuid=uuid4(), name="Инженерный", type_id=faculty_type.uuid)
+    async_session.add(faculty)
+    await async_session.commit()
+
     exam = Exam(uuid=uuid4(), name="Физика", code="phys")
-    async_session.add_all([faculty, exam])
+    async_session.add(exam)
     await async_session.commit()
 
     requirement = FacultyExamRequirement(
