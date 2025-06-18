@@ -86,9 +86,9 @@ async def test_data():
         await session.commit()
 
         # Требования к экзаменам
-        requirement1 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam1.uuid, min_score=60)
-        requirement2 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam2.uuid, min_score=40)
-        session.add_all([requirement1, requirement2])
+        req1 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam1.uuid, min_score=60)
+        req2 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=exam2.uuid, min_score=40)
+        session.add_all([req1, req2])
         await session.commit()
 
         yield
