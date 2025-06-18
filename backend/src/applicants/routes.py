@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
+from uuid import UUID
+from typing import List
+
 from backend.src.database.main import get_session
 from backend.src.applicants.schemas import (
     ResponseResult, ApplicantAnswers, ApplicantInfo, ApplicantUUIDResponse,
     QuestionSch, AnswerSch, Exam, Exams, RequiredExams
 )
-from uuid import UUID
 from .service import ResultService, QuestionService, ExamsService
 
 api_router = APIRouter(prefix="/backend/api")
@@ -76,7 +78,7 @@ async def process_user_answers(user_data: ApplicantAnswers,
 
 @api_router.get("/questions/", 
                status_code=status.HTTP_200_OK,
-               response_model= QuestionSch,
+               response_model= List[QuestionSch],
                summary="Get all questions",
                description="Returns all questions with possible answers")
 async def get_all_questions(session: AsyncSession = Depends(get_session)):
