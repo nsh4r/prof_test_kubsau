@@ -16,6 +16,13 @@ export interface UserInfo {
   answers: Answer[];
 }
 
+export interface ExamResult {
+  exam_id: string;
+  exam_name: string;
+  exam_code: string;
+  score: number;
+}
+
 export interface UserResults {
   surname: string;
   name: string;
@@ -24,6 +31,7 @@ export interface UserResults {
   city: string;
   uuid: string;
   faculty_type: FacultyType[];
+  exams: ExamResult[];
 }
 
 export interface FacultyType {
@@ -55,4 +63,20 @@ interface Answers {
   uuid: string;
   question_id: string;
   text: string;
+}
+
+export interface ExamScore {
+  exam_id: string;
+  exam_name: string;
+  exam_code: string;
+  score: number;
+}
+
+export interface Inputs {
+  phone_number: string;
+  surname: string;
+  name: string;
+  patronymic: string;
+  city: string;
+  exams: ExamScore[];
 }
