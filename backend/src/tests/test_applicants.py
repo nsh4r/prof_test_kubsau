@@ -28,6 +28,9 @@ async def test_register_applicant(client: AsyncClient, test_data):
     assert response.status_code == 200
     data = response.json()
     assert UUID(data["uuid"])
+    # Проверяем, что экзамены сохранились
+    get_response = await client.get(f"/backend/api/applicant/{data['uuid']}")
+    assert len(get_response.json()["exams"]) == 2
 
 @pytest.mark.asyncio
 async def test_get_applicant_results(client: AsyncClient, test_data):
@@ -49,7 +52,11 @@ async def test_get_applicant_results(client: AsyncClient, test_data):
     uuid = register_resp.json()["uuid"]
     response = await client.get(f"/backend/api/applicant/{uuid}")
     assert response.status_code == 200
-    assert response.json()["uuid"] == uuid
+    data = response.json()
+    assert data["uuid"] == uuid
+    # Проверяем, что экзамены возвращаются в ответе
+    assert len(data["exams"]) == 1
+    assert data["exams"][0]["exam_code"] == "rus"
 
 @pytest.mark.asyncio
 async def test_process_user_answers(client: AsyncClient, test_data):
@@ -84,6 +91,8 @@ async def test_process_user_answers(client: AsyncClient, test_data):
     data = response.json()
     assert data["uuid"] == uuid
     assert len(data["faculty_type"]) > 0
+    # Проверяем, что экзамены остались в ответе
+    assert len(data["exams"]) == 1
 
 @pytest.mark.asyncio
 async def test_get_questions(client: AsyncClient, test_data):
@@ -92,3 +101,5 @@ async def test_get_questions(client: AsyncClient, test_data):
     data = response.json()
     assert isinstance(data, list)
     assert len(data) > 0
+    assert "answers" in data[0]
+    assert len(data[0]["answers"]) > 0

@@ -11,7 +11,7 @@ from backend.src.__init__ import app
 from backend.src.config import settings
 from backend.src.database.models import (
     Applicant, Faculty, ApplicantFaculty,
-    FacultyType, Question, Answer, AnswerFaculty, Exam
+    FacultyType, Question, Answer, AnswerFaculty, Exam, FacultyExamRequirement
 )
 
 DATABASE_URL = settings.postgres_url
@@ -56,18 +56,35 @@ async def test_data():
         session.add_all([faculty_type1, faculty_type2])
         await session.commit()
 
-        # Вопрос
+        # Факультеты
+        faculty1 = Faculty(
+            uuid=UUID("33333333-3333-3333-3333-333333333333"),
+            name="Факультет информатики",
+            url="https://example.com/info",
+            type_id=faculty_type1.uuid
+        )
+        session.add(faculty1)
+        await session.commit()
+
+        # Требования факультета к экзаменам
+        exam_requirement = FacultyExamRequirement(
+            faculty_id=faculty1.uuid,
+            exam_id=UUID("236e43f1-6d9a-42d2-bf80-514e7ed3030c"),
+            min_score=60
+        )
+        session.add(exam_requirement)
+        await session.commit()
+
+        # Остальные данные (вопросы, ответы и т.д.) остаются как были
         question = Question(uuid=UUID("11111111-1111-1111-1111-111111111111"), text="Тестовый вопрос")
         session.add(question)
         await session.commit()
 
-        # Ответы
         answer1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), text="Тестовый ответ 1", question_id=question.uuid)
         answer2 = Answer(uuid=UUID("33333333-3333-3333-3333-333333333333"), text="Тестовый ответ 2", question_id=question.uuid)
         session.add_all([answer1, answer2])
         await session.commit()
 
-        # Связи ответов с факультетами
         answer_faculty1 = AnswerFaculty(answer_id=answer1.uuid, faculty_type_id=faculty_type1.uuid, score=10)
         answer_faculty2 = AnswerFaculty(answer_id=answer2.uuid, faculty_type_id=faculty_type2.uuid, score=5)
         session.add_all([answer_faculty1, answer_faculty2])
