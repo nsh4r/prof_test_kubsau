@@ -4,15 +4,14 @@ from httpx import AsyncClient
 from sqlmodel import SQLModel
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from backend.src.database.main import get_session
 from backend.src.__init__ import app
 from backend.src.config import settings
 from backend.src.database.models import (
     Applicant, Faculty, ApplicantFaculty,
-    FacultyType, Question, Answer, AnswerFaculty,
-    Exam, FacultyExamRequirement
+    FacultyType, Question, Answer, AnswerFaculty, Exam
 )
 
 DATABASE_URL = settings.postgres_url
@@ -49,43 +48,33 @@ async def client(prepare_database):
     app.dependency_overrides.clear()
 
 @pytest.fixture()
-async def test_data(prepare_database):
+async def test_data():
     async with TestSessionLocal() as session:
         # Типы факультетов
-        ft1 = FacultyType(uuid=uuid4(), name="Технический")
-        ft2 = FacultyType(uuid=uuid4(), name="Гуманитарный")
-        session.add_all([ft1, ft2])
+        faculty_type1 = FacultyType(uuid=UUID("11111111-1111-1111-1111-111111111111"), name="Технический")
+        faculty_type2 = FacultyType(uuid=UUID("22222222-2222-2222-2222-222222222222"), name="Гуманитарный")
+        session.add_all([faculty_type1, faculty_type2])
         await session.commit()
 
-        # Факультет
-        faculty = Faculty(uuid=uuid4(), name="Инженерный", type_id=ft1.uuid, url="")
-        session.add(faculty)
-        await session.commit()
-
-        # Вопрос и ответы
+        # Вопрос
         question = Question(uuid=UUID("11111111-1111-1111-1111-111111111111"), text="Тестовый вопрос")
         session.add(question)
         await session.commit()
 
-        a1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), text="Ответ 1", question_id=question.uuid)
-        a2 = Answer(uuid=UUID("33333333-3333-3333-3333-333333333333"), text="Ответ 2", question_id=question.uuid)
-        session.add_all([a1, a2])
+        # Ответы
+        answer1 = Answer(uuid=UUID("22222222-2222-2222-2222-222222222222"), text="Тестовый ответ 1", question_id=question.uuid)
+        answer2 = Answer(uuid=UUID("33333333-3333-3333-3333-333333333333"), text="Тестовый ответ 2", question_id=question.uuid)
+        session.add_all([answer1, answer2])
         await session.commit()
 
-        af1 = AnswerFaculty(answer_id=a1.uuid, faculty_type_id=ft1.uuid, score=10)
-        af2 = AnswerFaculty(answer_id=a2.uuid, faculty_type_id=ft2.uuid, score=5)
-        session.add_all([af1, af2])
+        # Связи ответов с факультетами
+        answer_faculty1 = AnswerFaculty(answer_id=answer1.uuid, faculty_type_id=faculty_type1.uuid, score=10)
+        answer_faculty2 = AnswerFaculty(answer_id=answer2.uuid, faculty_type_id=faculty_type2.uuid, score=5)
+        session.add_all([answer_faculty1, answer_faculty2])
         await session.commit()
 
         # Экзамены
-        e1 = Exam(uuid=UUID("236e43f1-6d9a-42d2-bf80-514e7ed3030c"), name="Русский язык", code="rus")
-        e2 = Exam(uuid=UUID("bde589f5-c13e-4606-ad55-c394038091b8"), name="Математика (базовая)", code="math_basic")
-        session.add_all([e1, e2])
+        exam1 = Exam(uuid=UUID("236e43f1-6d9a-42d2-bf80-514e7ed3030c"), name="Русский язык", code="rus")
+        exam2 = Exam(uuid=UUID("bde589f5-c13e-4606-ad55-c394038091b8"), name="Математика (базовая)", code="math_basic")
+        session.add_all([exam1, exam2])
         await session.commit()
-
-        req1 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=e1.uuid, min_score=60)
-        req2 = FacultyExamRequirement(faculty_id=faculty.uuid, exam_id=e2.uuid, min_score=40)
-        session.add_all([req1, req2])
-        await session.commit()
-
-        yield
