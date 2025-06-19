@@ -1,7 +1,7 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import styles from "./MainPage.module.css";
 import { registerUser, getExams } from "api/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +13,6 @@ interface ExamScore {
   score: number;
 }
 
-// Схема валидации
 const schema = z.object({
   phone_number: z.string()
     .transform(val => val.replace(/\D/g, ''))
@@ -50,7 +49,7 @@ const schema = z.object({
         .min(0, "Балл не может быть меньше 0")
         .max(100, "Балл не может быть больше 100")
     })
-  ).min(2, "Необходимо указать минимум 2 экзамена")
+  ).min(2, "Укажите минимум 2 экзамена")
 }).refine((data) => {
   if (!data.noPatronymic && !data.patronymic) {
     return false;
@@ -98,6 +97,15 @@ export const MainPage = () => {
     }
   });
 
+  const exams = watch("exams");
+
+  const availableExamsFiltered = useMemo(() => {
+    const selectedExamIds = exams.map(e => e.exam_id).filter(Boolean);
+    return availableExams.filter(exam => 
+      !selectedExamIds.includes(exam.exam_id)
+    );
+  }, [availableExams, exams]);
+
   useEffect(() => {
     const fetchExams = async () => {
       setLoadingExams(true);
@@ -113,8 +121,6 @@ export const MainPage = () => {
     };
     fetchExams();
   }, []);
-
-  const exams = watch("exams");
 
   const formatPhoneNumber = (value: string): string => {
     if (!value) return '';
@@ -172,19 +178,35 @@ export const MainPage = () => {
     setValue("exams", newExams, { shouldValidate: true });
   };
 
-  const handleExamChange = (index: number, field: keyof ExamScore, value: any) => {
+  const handleExamSelect = (index: number, examId: string) => {
     const newExams = [...exams];
-    (newExams[index] as any)[field] = value;
+    const selectedExam = availableExams.find(e => e.exam_id === examId);
     
-    if (field === 'exam_id') {
-      const selectedExam = availableExams.find(e => e.exam_id === value);
-      if (selectedExam) {
-        newExams[index].exam_name = selectedExam.exam_name;
-        newExams[index].exam_code = selectedExam.exam_code;
-      }
+    if (selectedExam) {
+      newExams[index] = {
+        exam_id: selectedExam.exam_id,
+        exam_name: selectedExam.exam_name,
+        exam_code: selectedExam.exam_code,
+        score: 0
+      };
+    } else {
+      newExams[index] = { exam_id: "", exam_name: "", exam_code: "", score: 0 };
     }
     
     setValue("exams", newExams, { shouldValidate: true });
+  };
+
+  const handleScoreChange = (index: number, value: string) => {
+    if (value === '') {
+      setValue(`exams.${index}.score`, 0, { shouldValidate: true });
+      return;
+    }
+    
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue)) {
+      const clampedValue = Math.min(Math.max(numValue, 0), 100);
+      setValue(`exams.${index}.score`, clampedValue, { shouldValidate: true });
+    }
   };
 
   const handleNoPatronymicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -349,39 +371,57 @@ export const MainPage = () => {
         <div className={styles.examsSection}>
           <h3>Результаты ЕГЭ</h3>
           
+          {errors.exams && (
+            <div className={styles.examError}>
+              {errors.exams.message}
+            </div>
+          )}
+
           {exams.map((exam, index) => (
             <div key={index} className={styles.examRow}>
-              <div className={styles.examField}>
-                <label>Экзамен *</label>
+              <div className={styles.examSelectWrapper}>
                 <select
                   value={exam.exam_id}
-                  onChange={(e) => handleExamChange(index, 'exam_id', e.target.value)}
+                  onChange={(e) => handleExamSelect(index, e.target.value)}
                   disabled={isLoading || loadingExams}
+                  className={styles.examSelect}
                 >
                   <option value="">Выберите экзамен</option>
-                  {availableExams.map((avExam) => (
+                  {availableExamsFiltered.map((avExam) => (
                     <option key={avExam.exam_id} value={avExam.exam_id}>
                       {avExam.exam_name}
                     </option>
                   ))}
+                  {exam.exam_id && (
+                    <option value={exam.exam_id}>
+                      {exam.exam_name}
+                    </option>
+                  )}
                 </select>
                 {errors.exams?.[index]?.exam_id && (
-                  <span className={styles.error}>{errors.exams[index]?.exam_id?.message}</span>
+                  <span className={styles.fieldError}>{errors.exams[index]?.exam_id?.message}</span>
                 )}
               </div>
 
-              <div className={styles.examField}>
-                <label>Баллы *</label>
+              <div className={styles.scoreInputWrapper}>
                 <input
                   type="number"
                   min="0"
                   max="100"
-                  value={exam.score || 0}
-                  onChange={(e) => handleExamChange(index, 'score', parseInt(e.target.value) || 0)}
-                  disabled={isLoading}
+                  value={exam.score === 0 ? '' : exam.score}
+                  onChange={(e) => handleScoreChange(index, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Backspace' && e.currentTarget.value === '') {
+                      e.preventDefault();
+                      setValue(`exams.${index}.score`, 0, { shouldValidate: true });
+                    }
+                  }}
+                  disabled={isLoading || !exam.exam_id}
+                  className={styles.scoreInput}
+                  placeholder="0-100"
                 />
                 {errors.exams?.[index]?.score && (
-                  <span className={styles.error}>{errors.exams[index]?.score?.message}</span>
+                  <span className={styles.fieldError}>{errors.exams[index]?.score?.message}</span>
                 )}
               </div>
 
@@ -398,15 +438,11 @@ export const MainPage = () => {
             </div>
           ))}
 
-          {errors.exams && (
-            <span className={styles.error}>{errors.exams.message}</span>
-          )}
-
           <button
             type="button"
             onClick={addExam}
             className={styles.addExamButton}
-            disabled={isLoading || loadingExams}
+            disabled={isLoading || loadingExams || exams.length >= availableExams.length}
           >
             Добавить экзамен
           </button>
