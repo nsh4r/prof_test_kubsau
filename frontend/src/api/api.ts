@@ -1,37 +1,6 @@
-import { Question, UserInfo, UserResults, ExamScore } from "./types";
+import { Question, UserInfo, UserResults, ExamResult, RegisterUserPayload } from "./types";
 
-export const BASE_URL = import.meta.env.VITE_BASE_URL || "http://your-api-base-url/";
-
-interface RegisterUserPayload {
-  surname: string;
-  name: string;
-  patronymic: string | null;
-  phone_number: string;
-  city: string;
-  exams: ExamScore[];
-}
-
-interface ExamResponse {
-  uuid: string;
-  name: string;
-  code: string;
-}
-
-interface ExamsListResponse {
-  exams: ExamResponse[];
-}
-
-interface RequiredExamResponse {
-  faculty_id: string;
-  faculty_name: string;
-  exam_id: string;
-  exam_code: string;
-  min_score: number;
-}
-
-interface RequiredExamsResponse {
-  required_exams: RequiredExamResponse[];
-}
+export const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:20000/backend/api/";
 
 // Получение вопросов теста
 export const getQuestions = async (): Promise<Question[]> => {
@@ -89,14 +58,14 @@ export const getUserInfo = async (uuid: string): Promise<UserResults> => {
       phone_number: data.phone_number,
       city: data.city,
       uuid: data.uuid,
-      faculty_type: data.faculty_type.map((ft: any) => ({
+      faculty_type: data.faculty_type?.map((ft: any) => ({
         name: ft.name,
         compliance: ft.compliance,
-        faculties: ft.faculties.map((f: any) => ({
+        faculties: ft.faculties?.map((f: any) => ({
           name: f.name,
           url: f.url
-        }))
-      })),
+        })) || []
+      })) || [],
       exams: data.exams || []
     };
   } catch (error) {
@@ -132,7 +101,7 @@ export const registerUser = async (userInfo: RegisterUserPayload): Promise<{ uui
 };
 
 // Получение списка всех доступных экзаменов
-export const getExams = async (): Promise<ExamScore[]> => {
+export const getExams = async (): Promise<ExamResult[]> => {
   try {
     const response = await fetch(`${BASE_URL}exam/`);
     
@@ -140,55 +109,16 @@ export const getExams = async (): Promise<ExamScore[]> => {
       throw new Error(`Ошибка HTTP: ${response.status}`);
     }
     
-    const data: ExamsListResponse = await response.json();
+    const data = await response.json();
     
-    return data.exams.map(exam => ({
+    return data.exams?.map((exam: any) => ({
       exam_id: exam.uuid,
       exam_name: exam.name,
       exam_code: exam.code,
       score: 0
-    }));
+    })) || [];
   } catch (error) {
     console.error("Ошибка при получении списка экзаменов:", error);
     throw new Error("Не удалось загрузить список экзаменов");
-  }
-};
-
-// Получение списка обязательных экзаменов для факультетов
-export const getRequiredExams = async (): Promise<RequiredExamResponse[]> => {
-  try {
-    const response = await fetch(`${BASE_URL}exam/required`);
-    
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}`);
-    }
-    
-    const data: RequiredExamsResponse = await response.json();
-    return data.required_exams;
-  } catch (error) {
-    console.error("Ошибка при получении обязательных экзаменов:", error);
-    throw new Error("Не удалось загрузить список обязательных экзаменов");
-  }
-};
-
-// Проверка результатов (альтернативный метод)
-export const checkResults = async (results: UserInfo): Promise<UserResults> => {
-  try {
-    const response = await fetch(`${BASE_URL}questions/`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(results),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Ошибка при проверке результатов:", error);
-    throw error;
   }
 };

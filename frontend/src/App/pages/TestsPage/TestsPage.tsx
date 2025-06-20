@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getQuestions, getTestResults } from "api/api";
 import styles from "./TestsPage.module.css";
-import { Question, UserInfo } from "src/api/types";
+import { Question } from "src/api/types";
 import { useNavigate } from "react-router-dom";
 
 export const TestsPage = () => {
@@ -22,7 +22,6 @@ export const TestsPage = () => {
     };
     setSelectedAnswers(newSelectedAnswers);
 
-    // Автоматический переход к следующему вопросу, если это не последний вопрос
     if (currentQuestionIndex < totalQuestions - 1) {
       setTimeout(() => {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -63,7 +62,7 @@ export const TestsPage = () => {
         answer_ids: [selectedAnswers[question.id]],
       }));
 
-      const results: UserInfo = {
+      const results = {
         uuid,
         answers,
       };
@@ -74,7 +73,6 @@ export const TestsPage = () => {
         localStorage.setItem("testResults", JSON.stringify(response));
         navigate("/results");
       }
-      
     } catch (error) {
       console.error("Ошибка при отправке результатов:", error);
       setError("Произошла ошибка при отправке результатов");
@@ -96,6 +94,7 @@ export const TestsPage = () => {
         }
         
         const data = await getQuestions();
+        console.log('Received questions:', data); // Логгирование данных
         setQuestions(data);
       } catch (error) {
         console.error("Ошибка при загрузке вопросов:", error);
@@ -173,16 +172,16 @@ export const TestsPage = () => {
             <div className={styles.answersContainer}>
               {currentQuestion.answers.map((answer) => (
                 <div
-                  key={answer.uuid}
+                  key={answer.id}
                   className={`
                     ${styles.answerItem} 
                     ${
-                      selectedAnswers[currentQuestion.id] === answer.uuid
+                      selectedAnswers[currentQuestion.id] === answer.id
                         ? styles.selectedAnswer
                         : ""
                     }
                   `}
-                  onClick={() => handleAnswerSelect(answer.uuid)}
+                  onClick={() => handleAnswerSelect(answer.id)}
                 >
                   <div className={styles.answerBadge}></div>
                   <span className={styles.answerText}>{answer.text}</span>

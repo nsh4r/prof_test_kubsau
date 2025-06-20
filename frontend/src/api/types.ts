@@ -1,19 +1,22 @@
-export interface Inputs {
-  phone_number: string;
-  surname: string;
-  name: string;
-  patronymic: string;
-  city: string;
+export interface Answer {
+  id: string;
+  text: string;
 }
 
-type Answer = {
+export interface Question {
+  id: string;
+  question: string;
+  answers: Answer[];
+}
+
+export interface UserAnswer {
   question_id: string;
   answer_ids: string[];
-};
+}
 
 export interface UserInfo {
   uuid: string;
-  answers: Answer[];
+  answers: UserAnswer[];
 }
 
 export interface ExamResult {
@@ -21,6 +24,17 @@ export interface ExamResult {
   exam_name: string;
   exam_code: string;
   score: number;
+}
+
+export interface Faculty {
+  name: string;
+  url: string;
+}
+
+export interface FacultyType {
+  name: string;
+  compliance: number;
+  faculties: Faculty[];
 }
 
 export interface UserResults {
@@ -34,17 +48,6 @@ export interface UserResults {
   exams: ExamResult[];
 }
 
-export interface FacultyType {
-  name: string;
-  compliance: number;
-  faculties: Faculty[];
-}
-
-export interface Faculty {
-  name: string;
-  url: string;
-}
-
 export interface UserData {
   surname: string;
   name: string;
@@ -53,30 +56,6 @@ export interface UserData {
   city: string;
 }
 
-export interface Question {
-  id: string;
-  question: string;
-  answers: Answers[];
-}
-
-interface Answers {
-  uuid: string;
-  question_id: string;
-  text: string;
-}
-
-export interface ExamScore {
-  exam_id: string;
-  exam_name: string;
-  exam_code: string;
-  score: number;
-}
-
-export interface Inputs {
-  phone_number: string;
-  surname: string;
-  name: string;
-  patronymic: string;
-  city: string;
-  exams: ExamScore[];
+export interface RegisterUserPayload extends UserData {
+  exams: ExamResult[];
 }

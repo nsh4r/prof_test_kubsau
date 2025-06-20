@@ -42,7 +42,7 @@ const schema = z.object({
   }),
   exams: z.array(
     z.object({
-      exam_id: z.string().min(1, "Выберите экзамен"),
+      exam_id: z.string(),
       exam_name: z.string(),
       exam_code: z.string(),
       score: z.number()
@@ -371,11 +371,6 @@ export const MainPage = () => {
         <div className={styles.examsSection}>
           <h3>Результаты ЕГЭ</h3>
           
-          {errors.exams && (
-            <div className={styles.examError}>
-              {errors.exams.message}
-            </div>
-          )}
 
           {exams.map((exam, index) => (
             <div key={index} className={styles.examRow}>
