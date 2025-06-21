@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import styles from './ResultsPage.module.css';
-import { FacultyType } from 'api/types';
+import { FacultyType, ExamResult } from 'api/types';
 import { useNavigate } from 'react-router-dom';
+import { getRequiredExams } from 'api/api';
 
 const facultyColors = [
   '#FF6384', // Человек-искусство
@@ -11,8 +12,14 @@ const facultyColors = [
   '#9966FF'  // Человек-техника
 ];
 
+interface MatchingFacultiesData {
+  [facultyName: string]: boolean;
+}
+
 export const ResultsPage = () => {
   const [data, setData] = useState<FacultyType[]>([]);
+  const [exams, setExams] = useState<ExamResult[]>([]);
+  const [matchingFaculties, setMatchingFaculties] = useState<MatchingFacultiesData>({});
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,23 +30,27 @@ export const ResultsPage = () => {
       try {
         setLoading(true);
         
-        // Проверяем, есть ли uuid в localStorage
         const uuid = localStorage.getItem('uuid');
-        
         if (!uuid) {
           setError('Идентификатор пользователя не найден');
           setLoading(false);
           return;
         }
         
-        // Проверяем, есть ли сохраненные результаты теста
         const testResultsStr = localStorage.getItem('testResults');
-        
         if (testResultsStr) {
           try {
             const testResults = JSON.parse(testResultsStr);
             if (testResults && testResults.faculty_type && testResults.faculty_type.length > 0) {
               setData(testResults.faculty_type);
+              if (testResults.exams) {
+                setExams(testResults.exams);
+                // Получаем список требуемых экзаменов
+                const requiredExams = await getRequiredExams();
+                // Определяем совпадающие факультеты
+                const matching = findMatchingFaculties(testResults.exams, requiredExams.required_exams);
+                setMatchingFaculties(matching);
+              }
               setLoading(false);
               return;
             }
@@ -59,13 +70,32 @@ export const ResultsPage = () => {
     fetchData();
   }, [navigate]);
 
+  // Функция для поиска совпадающих факультетов
+  const findMatchingFaculties = (userExams: ExamResult[], requiredExams: any[]) => {
+    const userExamCodes = userExams.map(exam => exam.exam_code);
+    const matching: MatchingFacultiesData = {};
+
+    requiredExams.forEach(item => {
+      const facultyExams = requiredExams
+        .filter(req => req.faculty_name === item.faculty_name)
+        .map(req => req.exam_code);
+      
+      // Проверяем, что все требуемые экзамены есть у пользователя
+      const isMatching = facultyExams.every(code => userExamCodes.includes(code));
+      
+      if (isMatching) {
+        matching[item.faculty_name] = true;
+      }
+    });
+
+    return matching;
+  };
+
   const maxCompliance = data.length > 0 
     ? Math.max(...data.map(item => item.compliance)) 
     : 0;
 
   const handleRestart = () => {
-    // Очищаем данные и возвращаемся на главную страницу
-    console.log('Очистка localStorage при нажатии на кнопку "Пройти тест заново"');
     localStorage.removeItem('uuid');
     localStorage.removeItem('testResults');
     navigate('/');
@@ -107,6 +137,17 @@ export const ResultsPage = () => {
     <div className={styles.container}>
       <h1 className={styles.title}>Результаты</h1>
       
+      <div className={styles.examsInfo}>
+        <h3>Ваши экзамены:</h3>
+        <ul>
+          {exams.map((exam, index) => (
+            <li key={index}>
+              {exam.exam_name}: {exam.score} баллов
+            </li>
+          ))}
+        </ul>
+      </div>
+      
       <div className={styles.chartContainer}>
         <div className={styles.barChart}>
           {data.map((item, index) => (
@@ -143,8 +184,16 @@ export const ResultsPage = () => {
               <ul>
                 {item.faculties.map((faculty, fIndex) => (
                   <li key={fIndex}>
-                    <a href={faculty.url} target="_blank" rel="noopener noreferrer">
+                    <a 
+                      href={faculty.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className={matchingFaculties[faculty.name] ? styles.matchingFaculty : ''}
+                    >
                       {faculty.name}
+                      {matchingFaculties[faculty.name] && (
+                        <span className={styles.matchBadge}>Подходит по экзаменам</span>
+                      )}
                     </a>
                   </li>
                 ))}
@@ -159,4 +208,4 @@ export const ResultsPage = () => {
       </button>
     </div>
   );
-}; 
+};

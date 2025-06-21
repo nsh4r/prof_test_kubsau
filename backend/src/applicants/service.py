@@ -192,15 +192,15 @@ class ResultService:
     async def process_user_answers(self, user_data: ApplicantAnswers) -> ResponseResult:
         """
         Process user answers and update test results for an existing Applicant.
-        
+
         Args:
             user_data: Contains:
                 - uuid: Applicant UUID
                 - answers: List of answers with question_id and answer_ids
-                
+
         Returns:
-            ResponseResult: Updated test results
-            
+            ResponseResult: Updated test results with exams information
+
         Raises:
             ValueError: If applicant not found
         """
@@ -210,7 +210,23 @@ class ResultService:
         if not applicant:
             raise ValueError("Абитуриент с таким uuid не найден")
 
-        
+        # Get applicant's exams to include in the response
+        applicant_exams = await self.session.exec(
+            select(ApplicantExam, Exam)
+            .join(Exam, ApplicantExam.exam_id == Exam.uuid)
+            .where(ApplicantExam.applicant_id == applicant.uuid)
+        )
+        exam_results = [
+            ApplicantExamResult(
+                exam_id=ae.ApplicantExam.exam_id,
+                exam_name=ae.Exam.name,
+                exam_code=ae.Exam.code,
+                score=ae.ApplicantExam.score
+            )
+            for ae in applicant_exams.all()
+        ]
+
+        # Clear existing faculty associations
         existing_faculties = await self.session.exec(
             select(ApplicantFaculty).where(ApplicantFaculty.applicant_id == applicant.uuid)
         )
@@ -218,7 +234,7 @@ class ResultService:
             await self.session.delete(faculty)
         await self.session.commit()
 
-        
+        # Calculate new faculty scores based on answers
         faculty_scores = {}
         for answer_data in user_data.answers:
             for answer_id in answer_data.answer_ids:
@@ -227,11 +243,11 @@ class ResultService:
                 )
                 for answer_faculty in answer_faculties.all():
                     faculty_scores[answer_faculty.faculty_type_id] = (
-                        faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
+                            faculty_scores.get(answer_faculty.faculty_type_id, 0) + (answer_faculty.score or 0)
                     )
 
         faculties_list = []
-        
+
         for faculty_type_id, score in faculty_scores.items():
             faculty_type_result = await self.session.exec(
                 select(FacultyType).where(FacultyType.uuid == faculty_type_id)
@@ -252,7 +268,7 @@ class ResultService:
             )
             faculties_list.append(faculty_type_sch)
 
-           
+            # Create new faculty associations
             new_applicant_faculty = ApplicantFaculty(
                 applicant_id=applicant.uuid,
                 faculty_type_id=faculty_type_id,
@@ -269,9 +285,9 @@ class ResultService:
             patronymic=applicant.patronymic,
             city=applicant.city,
             phone_number=applicant.phone_number,
-            faculty_type=faculties_list
+            faculty_type=faculties_list,
+            exams=exam_results  # Added exams to the response
         )
-
 
 class QuestionService:
     """

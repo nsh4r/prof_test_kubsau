@@ -1,4 +1,4 @@
-import { Question, UserInfo, UserResults, ExamResult, RegisterUserPayload } from "./types";
+import { Question, UserInfo, UserResults, ExamResult, RegisterUserPayload, RequiredExamsResponse } from "./types";
 
 export const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:20000/backend/api/";
 
@@ -120,5 +120,21 @@ export const getExams = async (): Promise<ExamResult[]> => {
   } catch (error) {
     console.error("Ошибка при получении списка экзаменов:", error);
     throw new Error("Не удалось загрузить список экзаменов");
+  }
+};
+
+export const getRequiredExams = async (): Promise<RequiredExamsResponse> => {
+  try {
+    const response = await fetch(`${BASE_URL}exam/required`);
+    
+    if (!response.ok) {
+      throw new Error(`Ошибка HTTP: ${response.status}`);
+    }
+    
+    const data: RequiredExamsResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Ошибка при получении списка требуемых экзаменов:", error);
+    throw new Error("Не удалось загрузить список требуемых экзаменов");
   }
 };

@@ -59,3 +59,15 @@ export interface UserData {
 export interface RegisterUserPayload extends UserData {
   exams: ExamResult[];
 }
+
+export interface RequiredExam {
+  faculty_id: string;
+  faculty_name: string;
+  exam_id: string;
+  exam_code: string;
+  min_score: number;
+}
+
+export interface RequiredExamsResponse {
+  required_exams: RequiredExam[];
+}
